@@ -20,6 +20,9 @@ build/
 out/
 *.egg-info/
 
+# Turbo
+.turbo/
+
 # IDE
 .idea/
 .vscode/
