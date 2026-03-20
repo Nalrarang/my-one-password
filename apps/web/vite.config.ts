@@ -7,6 +7,14 @@ export default defineConfig({
   build: {
     target: "esnext",
   },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: "esnext",
+    },
+  },
+  esbuild: {
+    target: "esnext",
+  },
   plugins: [
     react(),
     tailwindcss(),

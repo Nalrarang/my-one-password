@@ -129,26 +129,39 @@ export function lock(): void {
 /**
  * Unlock the vault by re-deriving keys from the master password.
  *
- * Requires a valid session token and the encrypted vault key from the server.
- * The salt is already stored in the auth store from the last login.
+ * After a page refresh the in-memory salt is lost, so we fetch it from the
+ * server via GET /auth/salt. Then we re-authenticate to obtain the encrypted
+ * vault key and unwrap it.
  */
 export async function unlock(password: string): Promise<void> {
-  const { salt, sessionToken, email } = useAuthStore.getState();
+  const { sessionToken, email } = useAuthStore.getState();
+  let { salt } = useAuthStore.getState();
 
-  if (!salt || !sessionToken || !email) {
+  if (!sessionToken || !email) {
     throw new Error("Cannot unlock: no active session.");
   }
 
-  // Re-derive keys from password + stored salt.
+  // After a page refresh, salt is null — fetch from server.
+  if (!salt) {
+    const { salt: saltB64 } = await api.getSalt(email);
+    salt = fromBase64(saltB64);
+    useAuthStore.getState().setSalt(salt);
+  }
+
+  // Re-derive keys from password + salt.
   const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(password, salt);
   secureZero(masterKey);
 
-  // Re-authenticate to obtain the encrypted vault key.
-  const { encVaultKey: encVaultKeyB64 } = await api.login(
+  // Re-authenticate to obtain the encrypted vault key and refresh session.
+  const { sessionToken: newToken, encVaultKey: encVaultKeyB64 } = await api.login(
     email,
     toHex(authKeyBytes),
   );
   secureZero(authKeyBytes);
+
+  // Update session token so subsequent API calls use the fresh one.
+  const store = useAuthStore.getState();
+  store.setSession(newToken, store.userId!, email);
 
   // Unwrap the vault key using the encryption key.
   const encCryptoKey = await importKey(encKeyBytes);

@@ -2,10 +2,10 @@ name = "my-one-password-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-one-password-db"
-# database_id = "YOUR_DATABASE_ID"
+[[d1_databases]]
+binding = "DB"
+database_name = "my-one-password-db"
+database_id = "local-dev-db"
 
 # [[r2_buckets]]
 # binding = "STORAGE"

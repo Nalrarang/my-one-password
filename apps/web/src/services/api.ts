@@ -197,9 +197,10 @@ export async function getVaultItems(
   const qs = query.toString();
   const path = `/vault/items${qs ? `?${qs}` : ""}`;
 
-  return request<VaultItemResponse[]>(path, {
+  const res = await request<{ items: VaultItemResponse[] }>(path, {
     headers: authHeaders(sessionToken),
   });
+  return res.items;
 }
 
 /**
@@ -209,9 +210,10 @@ export async function getVaultItem(
   sessionToken: string,
   id: string,
 ): Promise<VaultItemResponse> {
-  return request<VaultItemResponse>(`/vault/items/${id}`, {
+  const res = await request<{ item: VaultItemResponse }>(`/vault/items/${id}`, {
     headers: authHeaders(sessionToken),
   });
+  return res.item;
 }
 
 /**
@@ -221,11 +223,12 @@ export async function createVaultItem(
   sessionToken: string,
   body: CreateItemRequest,
 ): Promise<VaultItemResponse> {
-  return request<VaultItemResponse>("/vault/items", {
+  const res = await request<{ item: VaultItemResponse }>("/vault/items", {
     method: "POST",
     headers: authHeaders(sessionToken),
     body: JSON.stringify(body),
   });
+  return res.item;
 }
 
 /**
@@ -236,11 +239,12 @@ export async function updateVaultItem(
   id: string,
   body: UpdateItemRequest,
 ): Promise<VaultItemResponse> {
-  return request<VaultItemResponse>(`/vault/items/${id}`, {
+  const res = await request<{ item: VaultItemResponse }>(`/vault/items/${id}`, {
     method: "PUT",
     headers: authHeaders(sessionToken),
     body: JSON.stringify(body),
   });
+  return res.item;
 }
 
 /**
