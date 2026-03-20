@@ -12,6 +12,8 @@ import {
 import * as api from "./api";
 import { useAuthStore } from "../stores/auth-store";
 import { toBase64, fromBase64, toHex } from "../lib/encoding";
+import { clearCache } from "../lib/offline-cache";
+import { clearAuthData } from "../lib/offline-auth-cache";
 
 // ---------------------------------------------------------------------------
 // Derived-key helpers (shared between sign-up and sign-in)
@@ -159,7 +161,8 @@ export async function unlock(password: string): Promise<void> {
 }
 
 /**
- * Log out — invalidates the server session and clears all local state.
+ * Log out — invalidates the server session and clears all local state,
+ * including the IndexedDB offline cache.
  */
 export async function logOut(): Promise<void> {
   const { sessionToken } = useAuthStore.getState();
@@ -171,6 +174,12 @@ export async function logOut(): Promise<void> {
       // Best-effort — still clear local state even if the server request fails.
     }
   }
+
+  // Clear offline caches so no encrypted data persists after logout.
+  await Promise.all([
+    clearCache().catch(() => {}),
+    clearAuthData().catch(() => {}),
+  ]);
 
   useAuthStore.getState().logout();
 }

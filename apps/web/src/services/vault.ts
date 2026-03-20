@@ -3,6 +3,7 @@ import type { VaultItemData, DecryptedVaultItem, ItemType } from "@my-one-passwo
 
 import * as api from "./api";
 import { toBase64, fromBase64 } from "../lib/encoding";
+import { cacheItems, getCachedItems } from "../lib/offline-cache";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -97,23 +98,17 @@ export async function encryptAndUpdateItem(
 }
 
 /**
- * Fetch all vault items from the server, decrypt each one, and return
- * an array of DecryptedVaultItem objects.
+ * Decrypt a list of raw API/cached items using the provided CryptoKey.
  */
-export async function fetchAndDecryptItems(
-  vaultKey: Uint8Array,
-  sessionToken: string,
-  filter?: { type?: string; favorite?: boolean },
+async function decryptRawItems(
+  cryptoKey: CryptoKey,
+  items: Array<{ id: string; itemType: string; encryptedData: string; iv: string; version: number; favorite: boolean; deleted: boolean; createdAt: string; updatedAt: string }>,
 ): Promise<DecryptedVaultItem[]> {
-  const items = await api.getVaultItems(sessionToken, filter);
-  const cryptoKey = await importKey(vaultKey);
-
-  const decrypted = await Promise.all(
+  return Promise.all(
     items.map(async (item) => {
       const iv = fromBase64(item.iv);
       const encryptedData = fromBase64(item.encryptedData);
 
-      // Re-combine IV + ciphertext to match the format expected by decrypt().
       const combined = new Uint8Array(iv.length + encryptedData.length);
       combined.set(iv, 0);
       combined.set(encryptedData, iv.length);
@@ -133,8 +128,39 @@ export async function fetchAndDecryptItems(
       } satisfies DecryptedVaultItem;
     }),
   );
+}
 
-  return decrypted;
+/**
+ * Fetch all vault items from the server, decrypt each one, and return
+ * an array of DecryptedVaultItem objects.
+ *
+ * When the network is unavailable, falls back to IndexedDB-cached
+ * encrypted items (populated on previous successful fetches).
+ */
+export async function fetchAndDecryptItems(
+  vaultKey: Uint8Array,
+  sessionToken: string,
+  filter?: { type?: string; favorite?: boolean },
+): Promise<DecryptedVaultItem[]> {
+  const cryptoKey = await importKey(vaultKey);
+
+  try {
+    const items = await api.getVaultItems(sessionToken, filter);
+
+    // Cache encrypted items in IndexedDB for offline access.
+    cacheItems(items).catch(() => {/* best-effort */});
+
+    return decryptRawItems(cryptoKey, items);
+  } catch (err) {
+    // If offline, try IndexedDB cache.
+    if (!navigator.onLine) {
+      const cached = await getCachedItems();
+      if (cached.length > 0) {
+        return decryptRawItems(cryptoKey, cached);
+      }
+    }
+    throw err;
+  }
 }
 
 /**
