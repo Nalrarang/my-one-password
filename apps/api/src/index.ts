@@ -17,7 +17,17 @@ export type Bindings = {
   STORAGE: R2Bucket;
 };
 
-const app = new Hono<{ Bindings: Bindings }>().basePath('/api');
+/**
+ * Context variables set by middleware and available to route handlers.
+ *
+ * - `userId`: Set by the auth-guard middleware after validating the
+ *   session token. Only populated on authenticated routes.
+ */
+export type Variables = {
+  userId: string;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/api');
 
 // ---------------------------------------------------------------------------
 // Global middleware

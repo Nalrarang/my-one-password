@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
-import type { Bindings } from '../index';
+import type { Bindings, Variables } from '../index';
 import { authGuard } from '../middleware/auth-guard';
 
-export const vaultRoutes = new Hono<{ Bindings: Bindings }>();
+export const vaultRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // All vault routes require authentication
 vaultRoutes.use('*', authGuard);

@@ -1,18 +1,21 @@
 import type { MiddlewareHandler } from 'hono';
 
-import type { Bindings } from '../index';
+import type { Bindings, Variables } from '../index';
 
 /**
  * Authentication guard middleware.
  *
- * Validates the Bearer token from the Authorization header. For now this
- * performs a presence check only. Full implementation will verify the token
- * against the D1 sessions table and attach the authenticated user to the
- * request context.
+ * Validates the Bearer token from the Authorization header against the
+ * D1 sessions table. If the session is valid and has not expired, the
+ * authenticated user's ID is attached to the request context via
+ * `c.set('userId', ...)`.
  *
- * TODO: Implement JWT verification against D1 sessions table
+ * Expired sessions are deleted opportunistically to keep the table clean.
  */
-export const authGuard: MiddlewareHandler<{ Bindings: Bindings }> = async (c, next) => {
+export const authGuard: MiddlewareHandler<{
+  Bindings: Bindings;
+  Variables: Variables;
+}> = async (c, next) => {
   const authHeader = c.req.header('Authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -25,9 +28,29 @@ export const authGuard: MiddlewareHandler<{ Bindings: Bindings }> = async (c, ne
     return c.json({ error: 'Empty bearer token' }, 401);
   }
 
-  // TODO: Look up token in D1 sessions table
-  // TODO: Verify token has not expired
-  // TODO: Attach user ID to context via c.set('userId', ...)
+  // Look up the session in D1
+  const session = await c.env.DB.prepare(
+    `SELECT user_id, expires_at FROM sessions WHERE token = ?`,
+  )
+    .bind(token)
+    .first<{ user_id: string; expires_at: string }>();
+
+  if (!session) {
+    return c.json({ error: 'Invalid session token' }, 401);
+  }
+
+  // Check whether the session has expired
+  const expiresAt = new Date(session.expires_at);
+  if (expiresAt <= new Date()) {
+    // Opportunistically clean up the expired session
+    await c.env.DB.prepare(`DELETE FROM sessions WHERE token = ?`)
+      .bind(token)
+      .run();
+    return c.json({ error: 'Session expired' }, 401);
+  }
+
+  // Attach the authenticated user ID to the context
+  c.set('userId', session.user_id);
 
   await next();
 };

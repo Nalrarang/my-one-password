@@ -1,15 +1,36 @@
+import { lock, logOut } from "../services/auth";
+
 export function VaultPage() {
+  function handleLock() {
+    lock();
+  }
+
+  async function handleLogout() {
+    await logOut();
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-100">My Vault</h1>
-        <button
-          type="button"
-          className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950"
-          aria-label="Lock vault"
-        >
-          Lock
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleLock}
+            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950"
+            aria-label="Lock vault"
+          >
+            Lock
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950"
+            aria-label="Sign out"
+          >
+            Sign Out
+          </button>
+        </div>
       </header>
 
       <div className="mt-16 flex flex-col items-center justify-center text-center">

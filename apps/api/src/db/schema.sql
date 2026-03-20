@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
-  salt BLOB NOT NULL,
-  verifier BLOB NOT NULL,
-  enc_vault_key BLOB NOT NULL,
+  salt TEXT NOT NULL,
+  auth_key_hash TEXT NOT NULL,
+  enc_vault_key TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
