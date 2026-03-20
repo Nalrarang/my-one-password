@@ -148,3 +148,110 @@ export async function logout(sessionToken: string): Promise<void> {
     headers: authHeaders(sessionToken),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Vault item types
+// ---------------------------------------------------------------------------
+
+export interface VaultItemResponse {
+  id: string;
+  itemType: string;
+  encryptedData: string; // base64
+  iv: string; // base64
+  version: number;
+  favorite: boolean;
+  deleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateItemRequest {
+  itemType: string;
+  encryptedData: string; // base64
+  iv: string; // base64
+  favorite?: boolean;
+}
+
+export interface UpdateItemRequest {
+  encryptedData: string; // base64
+  iv: string; // base64
+  version: number;
+  favorite?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Vault item API
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch all vault items, optionally filtered by type or favorite status.
+ */
+export async function getVaultItems(
+  sessionToken: string,
+  params?: { type?: string; favorite?: boolean },
+): Promise<VaultItemResponse[]> {
+  const query = new URLSearchParams();
+  if (params?.type) query.set("type", params.type);
+  if (params?.favorite != null) query.set("favorite", String(params.favorite));
+
+  const qs = query.toString();
+  const path = `/vault/items${qs ? `?${qs}` : ""}`;
+
+  return request<VaultItemResponse[]>(path, {
+    headers: authHeaders(sessionToken),
+  });
+}
+
+/**
+ * Fetch a single vault item by ID.
+ */
+export async function getVaultItem(
+  sessionToken: string,
+  id: string,
+): Promise<VaultItemResponse> {
+  return request<VaultItemResponse>(`/vault/items/${id}`, {
+    headers: authHeaders(sessionToken),
+  });
+}
+
+/**
+ * Create a new vault item.
+ */
+export async function createVaultItem(
+  sessionToken: string,
+  body: CreateItemRequest,
+): Promise<VaultItemResponse> {
+  return request<VaultItemResponse>("/vault/items", {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Update an existing vault item.
+ */
+export async function updateVaultItem(
+  sessionToken: string,
+  id: string,
+  body: UpdateItemRequest,
+): Promise<VaultItemResponse> {
+  return request<VaultItemResponse>(`/vault/items/${id}`, {
+    method: "PUT",
+    headers: authHeaders(sessionToken),
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Soft-delete a vault item.
+ */
+export async function deleteVaultItem(
+  sessionToken: string,
+  id: string,
+): Promise<void> {
+  return request<void>(`/vault/items/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(sessionToken),
+  });
+}
