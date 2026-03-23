@@ -1,9 +1,17 @@
 import { useState } from "react";
+import { Loader2, Lock, Globe } from "lucide-react";
 import { signIn, signUp } from "../services/auth";
+import { useTranslation } from "../lib/i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 
 type AuthMode = "signin" | "signup";
 
 export function LoginPage() {
+  const { t, locale, setLocale } = useTranslation();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
   const [masterPassword, setMasterPassword] = useState("");
@@ -16,12 +24,12 @@ export function LoginPage() {
     setError(null);
 
     if (mode === "signup" && masterPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("auth.passwordMismatch"));
       return;
     }
 
     if (masterPassword.length < 8) {
-      setError("Master password must be at least 8 characters.");
+      setError(t("auth.passwordTooShort"));
       return;
     }
 
@@ -35,197 +43,157 @@ export function LoginPage() {
       }
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unexpected error occurred.";
+        err instanceof Error ? err.message : t("auth.unexpectedError");
       setError(message);
     } finally {
       setLoading(false);
     }
   }
 
-  function switchMode() {
-    setMode((prev) => (prev === "signin" ? "signup" : "signin"));
-    setError(null);
-    setConfirmPassword("");
-  }
-
   const isSignUp = mode === "signup";
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-100">
-            my-one-password
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            {isSignUp
-              ? "Create an account to secure your vault."
-              : "Enter your credentials to unlock your vault."}
-          </p>
+      <div className="w-full max-w-sm space-y-6">
+        {/* Language toggle */}
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocale(locale === "ko" ? "en" : "ko")}
+            className="text-muted-foreground"
+          >
+            <Globe className="mr-1.5 h-4 w-4" />
+            {locale === "ko" ? "EN" : "한국어"}
+          </Button>
         </div>
 
-        {/* Mode tabs */}
-        <div
-          className="flex rounded-lg border border-slate-700 bg-slate-800"
-          role="tablist"
-          aria-label="Authentication mode"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!isSignUp}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              !isSignUp
-                ? "bg-blue-600 text-white"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-            onClick={() => {
-              setMode("signin");
-              setError(null);
-              setConfirmPassword("");
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={isSignUp}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              isSignUp
-                ? "bg-blue-600 text-white"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-            onClick={() => {
-              setMode("signup");
-              setError(null);
-            }}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-slate-300"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                placeholder="you@example.com"
-              />
+        <Card>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Lock className="h-6 w-6 text-primary" />
             </div>
-
-            <div>
-              <label
-                htmlFor="master-password"
-                className="block text-sm font-medium text-slate-300"
-              >
-                Master Password
-              </label>
-              <input
-                id="master-password"
-                type="password"
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-                required
-                value={masterPassword}
-                onChange={(e) => setMasterPassword(e.target.value)}
-                disabled={loading}
-                className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                placeholder="Enter your master password"
-              />
-            </div>
-
-            {isSignUp && (
-              <div>
-                <label
-                  htmlFor="confirm-password"
-                  className="block text-sm font-medium text-slate-300"
-                >
-                  Confirm Master Password
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                  className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                  placeholder="Confirm your master password"
-                />
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <div
-              role="alert"
-              className="rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300"
+            <CardTitle className="text-xl">{t("app.title")}</CardTitle>
+            <CardDescription>
+              {isSignUp ? t("auth.signUpDescription") : t("auth.signInDescription")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs
+              value={mode}
+              onValueChange={(v) => {
+                setMode(v as AuthMode);
+                setError(null);
+                setConfirmPassword("");
+              }}
             >
-              {error}
-            </div>
-          )}
+              <TabsList className="mb-4 w-full">
+                <TabsTrigger value="signin" className="flex-1">
+                  {t("auth.signIn")}
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="flex-1">
+                  {t("auth.signUp")}
+                </TabsTrigger>
+              </TabsList>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="mr-2 h-4 w-4 animate-spin"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                {isSignUp ? "Creating account..." : "Deriving keys..."}
-              </>
-            ) : isSignUp ? (
-              "Create Account"
-            ) : (
-              "Unlock"
-            )}
-          </button>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <TabsContent value="signin">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email-signin">{t("auth.email")}</Label>
+                      <Input
+                        id="email-signin"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password-signin">{t("auth.masterPassword")}</Label>
+                      <Input
+                        id="password-signin"
+                        type="password"
+                        autoComplete="current-password"
+                        required
+                        value={masterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
 
-          <p className="text-center text-sm text-slate-400">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              type="button"
-              onClick={switchMode}
-              className="font-medium text-blue-400 hover:text-blue-300"
-            >
-              {isSignUp ? "Sign in" : "Sign up"}
-            </button>
-          </p>
-        </form>
+                <TabsContent value="signup">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email-signup">{t("auth.email")}</Label>
+                      <Input
+                        id="email-signup"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                        placeholder="you@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password-signup">{t("auth.masterPassword")}</Label>
+                      <Input
+                        id="password-signup"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        value={masterPassword}
+                        onChange={(e) => setMasterPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">{t("auth.confirmPassword")}</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                  >
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" disabled={loading} className="w-full">
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {isSignUp ? t("auth.creatingAccount") : t("auth.derivingKeys")}
+                    </>
+                  ) : isSignUp ? (
+                    t("auth.signUp")
+                  ) : (
+                    t("auth.signIn")
+                  )}
+                </Button>
+              </form>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

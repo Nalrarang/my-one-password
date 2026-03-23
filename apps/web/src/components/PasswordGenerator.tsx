@@ -12,6 +12,10 @@ import {
 } from "../lib/password-strength";
 import type { StrengthResult } from "../lib/password-strength";
 import { copyToClipboard } from "../lib/clipboard";
+import { useTranslation } from "../lib/i18n";
+import { Copy, Check, RefreshCw } from "lucide-react";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +33,8 @@ type GeneratorMode = "password" | "passphrase";
 // ---------------------------------------------------------------------------
 
 export function StrengthMeter({ strength }: { strength: StrengthResult | null }) {
+  const { t } = useTranslation();
+
   if (!strength) return null;
 
   const segments = 5;
@@ -41,17 +47,17 @@ export function StrengthMeter({ strength }: { strength: StrengthResult | null })
           <div
             key={i}
             className={`h-1.5 flex-1 rounded-full transition-colors duration-200 ${
-              i <= strength.score ? strength.barColor : "bg-slate-700"
+              i <= strength.score ? strength.barColor : "bg-muted"
             }`}
           />
         ))}
       </div>
       {/* Label + crack time */}
       <div className="flex items-center justify-between text-xs">
-        <span className={strength.color}>{strength.label}</span>
+        <span className={strength.color}>{t(`strength.${strength.score}`)}</span>
         {strength.crackTime && (
-          <span className="text-slate-500">
-            Crack time: {strength.crackTime}
+          <span className="text-muted-foreground">
+            {t("generator.crackTime")} {strength.crackTime}
           </span>
         )}
       </div>
@@ -67,6 +73,8 @@ export function PasswordGenerator({
   onSelect,
   initialPassword,
 }: PasswordGeneratorProps) {
+  const { t } = useTranslation();
+
   // --- Generator mode ---
   const [mode, setMode] = useState<GeneratorMode>("password");
 
@@ -163,49 +171,71 @@ export function PasswordGenerator({
 
   // --- Render ---
   return (
-    <div className="space-y-4 rounded-lg border border-slate-700 bg-slate-800/60 p-4">
+    <div className="space-y-4 rounded-lg border border-border bg-card/60 p-4">
       {/* Generated password display */}
       <div className="flex items-center gap-2">
         <input
           type="text"
           readOnly
           value={generated}
-          className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 font-mono text-sm text-slate-100 focus:outline-none"
-          aria-label="Generated password"
+          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground focus:outline-none"
+          aria-label={t("generator.title")}
         />
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={handleCopy}
-          className="rounded-lg border border-slate-600 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
-          aria-label={copied ? "Copied" : "Copy password"}
+          aria-label={copied ? t("detail.copied") : t("generator.copy")}
         >
-          {copied ? <CheckIcon /> : <ClipboardIcon />}
-        </button>
-        <button
+          {copied ? (
+            <Check className="h-4 w-4 text-green-400" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={regenerate}
-          className="rounded-lg border border-slate-600 p-2 text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
-          aria-label="Regenerate password"
+          aria-label={t("generator.regenerate")}
         >
-          <RefreshIcon />
-        </button>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Strength meter */}
       <StrengthMeter strength={strength} />
 
       {/* Mode toggle */}
-      <div className="flex rounded-lg border border-slate-700 p-0.5" role="tablist" aria-label="Generator mode">
-        <ModeTab
-          label="Password"
-          active={mode === "password"}
+      <div className="flex rounded-lg border border-border p-0.5" role="tablist" aria-label="Generator mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "password"}
           onClick={() => setMode("password")}
-        />
-        <ModeTab
-          label="Passphrase"
-          active={mode === "passphrase"}
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            mode === "password"
+              ? "bg-secondary text-secondary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t("generator.password")}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "passphrase"}
           onClick={() => setMode("passphrase")}
-        />
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            mode === "passphrase"
+              ? "bg-secondary text-secondary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t("generator.passphrase")}
+        </button>
       </div>
 
       {/* Password mode controls */}
@@ -214,12 +244,12 @@ export function PasswordGenerator({
           {/* Length slider */}
           <div>
             <div className="flex items-center justify-between text-sm">
-              <label htmlFor="pw-length" className="text-slate-300">
-                Length
+              <label htmlFor="pw-length" className="text-muted-foreground">
+                {t("generator.length")}
               </label>
-              <span className="tabular-nums text-slate-400">
+              <Badge variant="secondary" className="tabular-nums">
                 {pwOptions.length}
-              </span>
+              </Badge>
             </div>
             <input
               id="pw-length"
@@ -230,7 +260,7 @@ export function PasswordGenerator({
               onChange={(e) =>
                 updatePwOption("length", Number(e.target.value))
               }
-              className="mt-1 w-full accent-blue-500"
+              className="mt-1 w-full accent-primary"
             />
           </div>
 
@@ -238,25 +268,25 @@ export function PasswordGenerator({
           <div className="grid grid-cols-2 gap-2">
             <Checkbox
               id="pw-upper"
-              label="Uppercase (A-Z)"
+              label={t("generator.uppercase")}
               checked={pwOptions.uppercase}
               onChange={(v) => updatePwOption("uppercase", v)}
             />
             <Checkbox
               id="pw-lower"
-              label="Lowercase (a-z)"
+              label={t("generator.lowercase")}
               checked={pwOptions.lowercase}
               onChange={(v) => updatePwOption("lowercase", v)}
             />
             <Checkbox
               id="pw-digits"
-              label="Numbers (0-9)"
+              label={t("generator.numbers")}
               checked={pwOptions.digits}
               onChange={(v) => updatePwOption("digits", v)}
             />
             <Checkbox
               id="pw-symbols"
-              label="Symbols (!@#$...)"
+              label={t("generator.symbols")}
               checked={pwOptions.symbols}
               onChange={(v) => updatePwOption("symbols", v)}
             />
@@ -270,12 +300,12 @@ export function PasswordGenerator({
           {/* Word count slider */}
           <div>
             <div className="flex items-center justify-between text-sm">
-              <label htmlFor="pp-words" className="text-slate-300">
-                Words
+              <label htmlFor="pp-words" className="text-muted-foreground">
+                {t("generator.words")}
               </label>
-              <span className="tabular-nums text-slate-400">
+              <Badge variant="secondary" className="tabular-nums">
                 {ppOptions.wordCount}
-              </span>
+              </Badge>
             </div>
             <input
               id="pp-words"
@@ -289,14 +319,14 @@ export function PasswordGenerator({
                   wordCount: Number(e.target.value),
                 })
               }
-              className="mt-1 w-full accent-blue-500"
+              className="mt-1 w-full accent-primary"
             />
           </div>
 
           {/* Separator */}
           <div>
-            <label htmlFor="pp-separator" className="text-sm text-slate-300">
-              Separator
+            <label htmlFor="pp-separator" className="text-sm text-muted-foreground">
+              {t("generator.separator")}
             </label>
             <input
               id="pp-separator"
@@ -306,7 +336,7 @@ export function PasswordGenerator({
               onChange={(e) =>
                 setPpOptions({ ...ppOptions, separator: e.target.value })
               }
-              className="mt-1 block w-20 rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-center text-sm text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-20 rounded-lg border border-border bg-background px-3 py-1.5 text-center text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
@@ -314,7 +344,7 @@ export function PasswordGenerator({
           <div className="grid grid-cols-2 gap-2">
             <Checkbox
               id="pp-caps"
-              label="Capitalize words"
+              label={t("generator.capitalize")}
               checked={ppOptions.capitalize}
               onChange={(v) =>
                 setPpOptions({ ...ppOptions, capitalize: v })
@@ -322,7 +352,7 @@ export function PasswordGenerator({
             />
             <Checkbox
               id="pp-number"
-              label="Include number"
+              label={t("generator.includeNumber")}
               checked={ppOptions.includeNumber}
               onChange={(v) =>
                 setPpOptions({ ...ppOptions, includeNumber: v })
@@ -333,13 +363,13 @@ export function PasswordGenerator({
       )}
 
       {/* Use button */}
-      <button
+      <Button
         type="button"
         onClick={handleUse}
-        className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+        className="w-full"
       >
-        Use This Password
-      </button>
+        {t("generator.useThis")}
+      </Button>
     </div>
   );
 }
@@ -347,32 +377,6 @@ export function PasswordGenerator({
 // ---------------------------------------------------------------------------
 // Small sub-components
 // ---------------------------------------------------------------------------
-
-function ModeTab({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-        active
-          ? "bg-slate-600 text-slate-100"
-          : "text-slate-400 hover:text-slate-200"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
 
 function Checkbox({
   id,
@@ -388,77 +392,16 @@ function Checkbox({
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-center gap-2 text-sm text-slate-300"
+      className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground"
     >
       <input
         id={id}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-900"
+        className="h-4 w-4 rounded border-border bg-background text-primary accent-primary"
       />
       {label}
     </label>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Icons
-// ---------------------------------------------------------------------------
-
-function ClipboardIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      className="h-4 w-4 text-green-400"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="m4.5 12.75 6 6 9-13.5"
-      />
-    </svg>
-  );
-}
-
-function RefreshIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182"
-      />
-    </svg>
   );
 }

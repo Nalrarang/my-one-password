@@ -1,7 +1,13 @@
 import { useState, useRef } from "react";
 import type { ItemType, VaultItemData } from "@my-one-password/shared";
+import { ArrowLeft, Upload, Loader2, CheckCircle } from "lucide-react";
 
 import type { ImportedItem } from "../lib/onepassword-import";
+import { useTranslation } from "../lib/i18n";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,6 +25,7 @@ type ImportStatus = "idle" | "parsing" | "importing" | "done" | "error";
 // ---------------------------------------------------------------------------
 
 export function ImportPage({ onImport, onBack }: ImportPageProps) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [parsedItems, setParsedItems] = useState<ImportedItem[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -88,32 +95,34 @@ export function ImportPage({ onImport, onBack }: ImportPageProps) {
     <div className="mx-auto max-w-2xl px-4 py-8">
       {/* Header */}
       <header className="flex items-center gap-3">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onBack}
-          className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Go back"
+          aria-label={t("form.goBack")}
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-        <h1 className="text-xl font-bold text-slate-100">Import from 1Password</h1>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold text-foreground">{t("import.title")}</h1>
       </header>
 
       {/* Instructions */}
-      <div className="mt-6 rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-        <h2 className="text-sm font-semibold text-slate-200">How to export from 1Password</h2>
-        <ol className="mt-2 space-y-1 text-sm text-slate-400">
-          <li>1. Open 1Password desktop app</li>
-          <li>2. File &rarr; Export &rarr; select vault</li>
-          <li>3. Choose <span className="font-mono text-slate-300">.1pux</span> format</li>
-          <li>4. Upload the exported file below</li>
-        </ol>
-        <p className="mt-3 text-xs text-slate-500">
-          Your data is processed entirely in the browser. The .1pux file is never sent to a server.
-        </p>
-      </div>
+      <Card className="mt-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">{t("import.howTo")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ol className="space-y-1 text-sm text-muted-foreground">
+            <li>{t("import.step1")}</li>
+            <li>{t("import.step2")}</li>
+            <li>{t("import.step3")}</li>
+            <li>{t("import.step4")}</li>
+          </ol>
+          <p className="mt-3 text-xs text-muted-foreground/70">
+            {t("import.privacy")}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* File upload */}
       <div className="mt-6">
@@ -123,7 +132,7 @@ export function ImportPage({ onImport, onBack }: ImportPageProps) {
           accept=".1pux"
           onChange={handleFileSelect}
           className="hidden"
-          aria-label="Select .1pux file"
+          aria-label={t("import.selectFile")}
         />
 
         {parsedItems.length === 0 && status !== "done" && (
@@ -131,22 +140,17 @@ export function ImportPage({ onImport, onBack }: ImportPageProps) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={status === "parsing"}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-600 bg-slate-800/30 px-6 py-10 text-sm text-slate-400 transition-colors hover:border-blue-500 hover:text-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card/30 px-6 py-10 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
           >
             {status === "parsing" ? (
               <>
-                <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Parsing {fileName}...
+                <Loader2 className="h-5 w-5 animate-spin" />
+                {t("import.parsing")} {fileName}...
               </>
             ) : (
               <>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                </svg>
-                Select .1pux file
+                <Upload className="h-6 w-6" />
+                {t("import.selectFile")}
               </>
             )}
           </button>
@@ -156,97 +160,96 @@ export function ImportPage({ onImport, onBack }: ImportPageProps) {
       {/* Parse results */}
       {parsedItems.length > 0 && status !== "done" && (
         <div className="mt-6 space-y-4">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="text-sm font-semibold text-slate-200">
-              Found {parsedItems.length} items in {fileName}
-            </h3>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {counts.login && (
-                <span className="rounded-full bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-300">
-                  {counts.login} Logins
-                </span>
-              )}
-              {counts.card && (
-                <span className="rounded-full bg-purple-900/50 px-3 py-1 text-xs font-medium text-purple-300">
-                  {counts.card} Cards
-                </span>
-              )}
-              {counts.note && (
-                <span className="rounded-full bg-green-900/50 px-3 py-1 text-xs font-medium text-green-300">
-                  {counts.note} Notes
-                </span>
-              )}
-              {counts.identity && (
-                <span className="rounded-full bg-amber-900/50 px-3 py-1 text-xs font-medium text-amber-300">
-                  {counts.identity} Identities
-                </span>
-              )}
-            </div>
-          </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">
+                {parsedItems.length} {t("import.found")} - {fileName}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {counts.login && (
+                  <Badge variant="secondary">
+                    {counts.login} {t("vault.logins")}
+                  </Badge>
+                )}
+                {counts.card && (
+                  <Badge variant="secondary">
+                    {counts.card} {t("vault.cards")}
+                  </Badge>
+                )}
+                {counts.note && (
+                  <Badge variant="secondary">
+                    {counts.note} {t("vault.notes")}
+                  </Badge>
+                )}
+                {counts.identity && (
+                  <Badge variant="secondary">
+                    {counts.identity} {t("vault.identities")}
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Import button */}
-          <button
-            type="button"
+          <Button
             onClick={handleImport}
             disabled={status === "importing"}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50"
+            className="w-full"
+            size="lg"
           >
             {status === "importing" ? (
               <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Importing {progress.current}/{progress.total}...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("import.importing")} {progress.current}/{progress.total}...
               </>
             ) : (
-              `Import ${parsedItems.length} items`
+              `${parsedItems.length} ${t("import.importButton")}`
             )}
-          </button>
+          </Button>
 
           {/* Progress bar */}
           {status === "importing" && (
-            <div className="h-2 overflow-hidden rounded-full bg-slate-700">
-              <div
-                className="h-full rounded-full bg-blue-500 transition-all duration-300"
-                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-              />
-            </div>
+            <Progress value={(progress.current / progress.total) * 100} />
           )}
         </div>
       )}
 
       {/* Success */}
       {status === "done" && (
-        <div className="mt-6 rounded-lg border border-green-800 bg-green-900/30 p-6 text-center">
-          <svg className="mx-auto h-10 w-10 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <p className="mt-3 text-sm font-semibold text-green-300">
-            Successfully imported {progress.total} items!
-          </p>
-          <button
-            type="button"
-            onClick={onBack}
-            className="mt-4 rounded-lg bg-green-700 px-5 py-2 text-sm font-medium text-white hover:bg-green-600"
-          >
-            Back to Vault
-          </button>
-        </div>
+        <Card className="mt-6 border-green-800 bg-green-900/30">
+          <CardContent className="p-6 text-center">
+            <CheckCircle className="mx-auto h-10 w-10 text-green-400" />
+            <p className="mt-3 text-sm font-semibold text-green-300">
+              {progress.total} {t("import.success")}
+            </p>
+            <Button
+              onClick={onBack}
+              className="mt-4 bg-green-700 text-white hover:bg-green-600"
+            >
+              {t("import.backToVault")}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Errors */}
       {errors.length > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-800 bg-amber-900/20 p-4">
-          <h3 className="text-sm font-semibold text-amber-300">
-            {status === "error" ? "Errors" : "Warnings"} ({errors.length})
-          </h3>
-          <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-xs text-amber-400">
-            {errors.map((err, i) => (
-              <li key={i}>{err}</li>
-            ))}
-          </ul>
-        </div>
+        <Card className="mt-4 border-amber-800 bg-amber-900/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-amber-300">
+              {status === "error" ? t("import.errors") : t("import.warnings")} ({errors.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-amber-400">
+              {errors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

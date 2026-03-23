@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import type { ItemType, VaultItemData, LoginItem, CardItem, NoteItem, IdentityItem } from "@my-one-password/shared";
-import { ITEM_TYPE_LABELS } from "@my-one-password/shared";
 import type { DecryptedVaultItem } from "@my-one-password/shared";
+import { ArrowLeft, Eye, EyeOff, Loader2, Shield, ChevronDown, Wand2 } from "lucide-react";
 import { PasswordGenerator, StrengthMeter } from "../components/PasswordGenerator";
 import { evaluateStrength, initPasswordStrength } from "../lib/password-strength";
 import type { StrengthResult } from "../lib/password-strength";
+import { useTranslation } from "../lib/i18n";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Card, CardContent } from "../components/ui/card";
+import { Select } from "../components/ui/select";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,29 +28,11 @@ interface ItemFormPageProps {
 // ---------------------------------------------------------------------------
 
 function defaultLogin(): LoginItem {
-  return {
-    type: "login",
-    title: "",
-    url: "",
-    urls: [],
-    username: "",
-    password: "",
-    notes: "",
-    customFields: [],
-  };
+  return { type: "login", title: "", url: "", urls: [], username: "", password: "", notes: "", customFields: [] };
 }
 
 function defaultCard(): CardItem {
-  return {
-    type: "card",
-    title: "",
-    cardholderName: "",
-    cardNumber: "",
-    expiryMonth: "",
-    expiryYear: "",
-    cvv: "",
-    notes: "",
-  };
+  return { type: "card", title: "", cardholderName: "", cardNumber: "", expiryMonth: "", expiryYear: "", cvv: "", notes: "" };
 }
 
 function defaultNote(): NoteItem {
@@ -52,75 +40,36 @@ function defaultNote(): NoteItem {
 }
 
 function defaultIdentity(): IdentityItem {
-  return {
-    type: "identity",
-    title: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: { street: "", city: "", state: "", postalCode: "", country: "" },
-    notes: "",
-  };
+  return { type: "identity", title: "", firstName: "", lastName: "", email: "", phone: "", address: { street: "", city: "", state: "", postalCode: "", country: "" }, notes: "" };
 }
 
 function defaultDataForType(itemType: ItemType): VaultItemData {
   switch (itemType) {
-    case "login":
-      return defaultLogin();
-    case "card":
-      return defaultCard();
-    case "note":
-      return defaultNote();
-    case "identity":
-      return defaultIdentity();
+    case "login": return defaultLogin();
+    case "card": return defaultCard();
+    case "note": return defaultNote();
+    case "identity": return defaultIdentity();
   }
 }
-
-// ---------------------------------------------------------------------------
-// Shared form styles
-// ---------------------------------------------------------------------------
-
-const inputClass =
-  "mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50";
-const labelClass = "block text-sm font-medium text-slate-300";
 
 // ---------------------------------------------------------------------------
 // Sub-forms
 // ---------------------------------------------------------------------------
 
-function LoginFields({
-  data,
-  onChange,
-  disabled,
-}: {
-  data: LoginItem;
-  onChange: (d: LoginItem) => void;
-  disabled: boolean;
-}) {
+function LoginFields({ data, onChange, disabled, t }: { data: LoginItem; onChange: (d: LoginItem) => void; disabled: boolean; t: (key: string) => string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [strength, setStrength] = useState<StrengthResult | null>(null);
   const strengthTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showTotp, setShowTotp] = useState(!!data.totpSecret);
 
-  // Initialize zxcvbn on mount.
-  useEffect(() => {
-    initPasswordStrength();
-  }, []);
+  useEffect(() => { initPasswordStrength(); }, []);
 
-  // Debounced strength evaluation when the user types a password manually.
   useEffect(() => {
     if (strengthTimer.current) clearTimeout(strengthTimer.current);
-    if (!data.password) {
-      setStrength(null);
-      return;
-    }
-    strengthTimer.current = setTimeout(() => {
-      evaluateStrength(data.password).then(setStrength);
-    }, 300);
-    return () => {
-      if (strengthTimer.current) clearTimeout(strengthTimer.current);
-    };
+    if (!data.password) { setStrength(null); return; }
+    strengthTimer.current = setTimeout(() => { evaluateStrength(data.password).then(setStrength); }, 300);
+    return () => { if (strengthTimer.current) clearTimeout(strengthTimer.current); };
   }, [data.password]);
 
   function handleSelectGenerated(password: string) {
@@ -128,333 +77,103 @@ function LoginFields({
     setShowGenerator(false);
   }
 
-  const [showTotp, setShowTotp] = useState(!!data.totpSecret);
-
   return (
     <>
-      <Field label="URL">
-        <input
-          type="url"
-          value={data.url}
-          onChange={(e) => onChange({ ...data, url: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="https://example.com"
-        />
-      </Field>
-      <Field label="Username">
-        <input
-          type="text"
-          autoComplete="off"
-          value={data.username}
-          onChange={(e) => onChange({ ...data, username: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="username or email"
-        />
-      </Field>
-      <Field label="Password">
+      <div className="space-y-2">
+        <Label>{t("form.url")}</Label>
+        <Input type="url" value={data.url} onChange={(e) => onChange({ ...data, url: e.target.value })} disabled={disabled} placeholder="https://example.com" />
+      </div>
+      <div className="space-y-2">
+        <Label>{t("form.username")}</Label>
+        <Input type="text" autoComplete="off" value={data.username} onChange={(e) => onChange({ ...data, username: e.target.value })} disabled={disabled} />
+      </div>
+      <div className="space-y-2">
+        <Label>{t("form.password")}</Label>
         <div className="relative">
-          <input
+          <Input
             type={showPassword ? "text" : "password"}
             autoComplete="off"
             value={data.password}
             onChange={(e) => onChange({ ...data, password: e.target.value })}
             disabled={disabled}
-            className={`${inputClass} pr-10`}
-            placeholder="password"
+            className="pr-10"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword((p) => !p)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
+          <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label={showPassword ? t("detail.hide") : t("detail.reveal")}>
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
 
-        {/* Strength meter for manually typed passwords */}
         {data.password && !showGenerator && (
-          <div className="mt-2">
-            <StrengthMeter strength={strength} />
-          </div>
+          <div className="mt-2"><StrengthMeter strength={strength} /></div>
         )}
 
-        {/* Generate password toggle */}
-        <button
-          type="button"
-          onClick={() => setShowGenerator((v) => !v)}
-          disabled={disabled}
-          className="mt-2 inline-flex items-center gap-1.5 text-sm text-blue-400 transition-colors hover:text-blue-300 disabled:opacity-50"
-        >
-          <GenerateIcon />
-          {showGenerator ? "Hide Generator" : "Generate Password"}
+        <button type="button" onClick={() => setShowGenerator((v) => !v)} disabled={disabled} className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary transition-colors hover:text-primary/80 disabled:opacity-50">
+          <Wand2 className="h-4 w-4" />
+          {showGenerator ? t("login.hideGenerator") : t("login.generatePassword")}
         </button>
 
-        {/* Password generator panel */}
         {showGenerator && (
-          <div className="mt-3">
-            <PasswordGenerator
-              onSelect={handleSelectGenerated}
-              initialPassword={data.password}
-            />
-          </div>
-        )}
-      </Field>
-
-      {/* TOTP / 2FA Setup */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-        <button
-          type="button"
-          onClick={() => setShowTotp((v) => !v)}
-          className="flex w-full items-center justify-between text-sm font-medium text-slate-300"
-        >
-          <span className="flex items-center gap-2">
-            <ShieldIcon />
-            Two-Factor Authentication (TOTP)
-          </span>
-          <svg
-            className={`h-4 w-4 transition-transform ${showTotp ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-
-        {showTotp && (
-          <div className="mt-4 space-y-3">
-            <Field label="TOTP Secret (Base32)">
-              <input
-                type="text"
-                autoComplete="off"
-                value={data.totpSecret ?? ""}
-                onChange={(e) =>
-                  onChange({ ...data, totpSecret: e.target.value.toUpperCase().replace(/\s/g, "") || undefined })
-                }
-                disabled={disabled}
-                className={`${inputClass} font-mono tracking-wider`}
-                placeholder="JBSWY3DPEHPK3PXP"
-              />
-            </Field>
-
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Algorithm">
-                <select
-                  value={data.totpAlgorithm ?? "SHA1"}
-                  onChange={(e) =>
-                    onChange({ ...data, totpAlgorithm: e.target.value as "SHA1" | "SHA256" | "SHA512" })
-                  }
-                  disabled={disabled}
-                  className={inputClass}
-                >
-                  <option value="SHA1">SHA-1</option>
-                  <option value="SHA256">SHA-256</option>
-                  <option value="SHA512">SHA-512</option>
-                </select>
-              </Field>
-              <Field label="Digits">
-                <select
-                  value={data.totpDigits ?? 6}
-                  onChange={(e) =>
-                    onChange({ ...data, totpDigits: Number(e.target.value) as 6 | 8 })
-                  }
-                  disabled={disabled}
-                  className={inputClass}
-                >
-                  <option value={6}>6</option>
-                  <option value={8}>8</option>
-                </select>
-              </Field>
-              <Field label="Period (sec)">
-                <input
-                  type="number"
-                  min={15}
-                  max={120}
-                  value={data.totpPeriod ?? 30}
-                  onChange={(e) =>
-                    onChange({ ...data, totpPeriod: Number(e.target.value) || 30 })
-                  }
-                  disabled={disabled}
-                  className={inputClass}
-                />
-              </Field>
-            </div>
-
-            {data.totpSecret && (
-              <p className="text-xs text-green-400">
-                TOTP configured. The code will appear on the detail page.
-              </p>
-            )}
-          </div>
+          <div className="mt-3"><PasswordGenerator onSelect={handleSelectGenerated} initialPassword={data.password} /></div>
         )}
       </div>
+
+      {/* TOTP / 2FA */}
+      <Card>
+        <CardContent className="p-4">
+          <button type="button" onClick={() => setShowTotp((v) => !v)} className="flex w-full items-center justify-between text-sm font-medium text-foreground">
+            <span className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {t("login.totp")}
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showTotp ? "rotate-180" : ""}`} />
+          </button>
+
+          {showTotp && (
+            <div className="mt-4 space-y-3">
+              <div className="space-y-2">
+                <Label>{t("login.totpSecret")}</Label>
+                <Input
+                  type="text"
+                  autoComplete="off"
+                  value={data.totpSecret ?? ""}
+                  onChange={(e) => onChange({ ...data, totpSecret: e.target.value.toUpperCase().replace(/\s/g, "") || undefined })}
+                  disabled={disabled}
+                  className="font-mono tracking-wider"
+                  placeholder="JBSWY3DPEHPK3PXP"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>{t("login.totpAlgorithm")}</Label>
+                  <Select value={data.totpAlgorithm ?? "SHA1"} onChange={(e) => onChange({ ...data, totpAlgorithm: e.target.value as "SHA1" | "SHA256" | "SHA512" })} disabled={disabled}>
+                    <option value="SHA1">SHA-1</option>
+                    <option value="SHA256">SHA-256</option>
+                    <option value="SHA512">SHA-512</option>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("login.totpDigits")}</Label>
+                  <Select value={data.totpDigits ?? 6} onChange={(e) => onChange({ ...data, totpDigits: Number(e.target.value) as 6 | 8 })} disabled={disabled}>
+                    <option value={6}>6</option>
+                    <option value={8}>8</option>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("login.totpPeriod")}</Label>
+                  <Input type="number" min={15} max={120} value={data.totpPeriod ?? 30} onChange={(e) => onChange({ ...data, totpPeriod: Number(e.target.value) || 30 })} disabled={disabled} />
+                </div>
+              </div>
+              {data.totpSecret && <p className="text-xs text-green-400">{t("login.totpConfigured")}</p>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-    </svg>
-  );
-}
-
-function GenerateIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-      />
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-      />
-    </svg>
   );
 }
 
 function formatCardNumber(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  return digits.replace(/(.{4})/g, "$1 ").trim();
-}
-
-function CardFields({
-  data,
-  onChange,
-  disabled,
-}: {
-  data: CardItem;
-  onChange: (d: CardItem) => void;
-  disabled: boolean;
-}) {
-  const [showCvv, setShowCvv] = useState(false);
-  const [showPin, setShowPin] = useState(false);
-
-  function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 19);
-    onChange({ ...data, cardNumber: digits });
-  }
-
-  return (
-    <>
-      <Field label="Cardholder Name">
-        <input
-          type="text"
-          autoComplete="off"
-          value={data.cardholderName}
-          onChange={(e) => onChange({ ...data, cardholderName: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="John Doe"
-        />
-      </Field>
-      <Field label="Card Number">
-        <div className="relative">
-          <input
-            type="text"
-            autoComplete="off"
-            inputMode="numeric"
-            value={formatCardNumber(data.cardNumber)}
-            onChange={handleCardNumberChange}
-            disabled={disabled}
-            className={`${inputClass} font-mono tracking-wider pr-16`}
-            placeholder="4111 1111 1111 1111"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">
-            {detectCardBrand(data.cardNumber)}
-          </span>
-        </div>
-      </Field>
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Month">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={2}
-            value={data.expiryMonth}
-            onChange={(e) => onChange({ ...data, expiryMonth: e.target.value.replace(/\D/g, "").slice(0, 2) })}
-            disabled={disabled}
-            className={inputClass}
-            placeholder="MM"
-          />
-        </Field>
-        <Field label="Year">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={4}
-            value={data.expiryYear}
-            onChange={(e) => onChange({ ...data, expiryYear: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-            disabled={disabled}
-            className={inputClass}
-            placeholder="YYYY"
-          />
-        </Field>
-        <Field label="CVV">
-          <div className="relative">
-            <input
-              type={showCvv ? "text" : "password"}
-              autoComplete="off"
-              inputMode="numeric"
-              maxLength={4}
-              value={data.cvv}
-              onChange={(e) => onChange({ ...data, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-              disabled={disabled}
-              className={`${inputClass} pr-10`}
-              placeholder="123"
-            />
-            <button
-              type="button"
-              onClick={() => setShowCvv((p) => !p)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
-              aria-label={showCvv ? "Hide CVV" : "Show CVV"}
-            >
-              {showCvv ? <EyeSlashIcon /> : <EyeIcon />}
-            </button>
-          </div>
-        </Field>
-      </div>
-      <Field label="PIN">
-        <div className="relative">
-          <input
-            type={showPin ? "text" : "password"}
-            autoComplete="off"
-            inputMode="numeric"
-            maxLength={8}
-            value={data.pin ?? ""}
-            onChange={(e) => onChange({ ...data, pin: e.target.value.replace(/\D/g, "").slice(0, 8) || undefined })}
-            disabled={disabled}
-            className={`${inputClass} pr-10`}
-            placeholder="Optional"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPin((p) => !p)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
-            aria-label={showPin ? "Hide PIN" : "Show PIN"}
-          >
-            {showPin ? <EyeSlashIcon /> : <EyeIcon />}
-          </button>
-        </div>
-      </Field>
-    </>
-  );
+  return raw.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
 }
 
 function detectCardBrand(number: string): string {
@@ -469,38 +188,80 @@ function detectCardBrand(number: string): string {
   return "";
 }
 
-function NoteFields({
-  data,
-  onChange,
-  disabled,
-}: {
-  data: NoteItem;
-  onChange: (d: NoteItem) => void;
-  disabled: boolean;
-}) {
+function CardFields({ data, onChange, disabled, t }: { data: CardItem; onChange: (d: CardItem) => void; disabled: boolean; t: (key: string) => string }) {
+  const [showCvv, setShowCvv] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
   return (
-    <Field label="Content">
+    <>
+      <div className="space-y-2">
+        <Label>{t("card.cardholderName")}</Label>
+        <Input type="text" autoComplete="off" value={data.cardholderName} onChange={(e) => onChange({ ...data, cardholderName: e.target.value })} disabled={disabled} />
+      </div>
+      <div className="space-y-2">
+        <Label>{t("card.cardNumber")}</Label>
+        <div className="relative">
+          <Input
+            type="text"
+            autoComplete="off"
+            inputMode="numeric"
+            value={formatCardNumber(data.cardNumber)}
+            onChange={(e) => onChange({ ...data, cardNumber: e.target.value.replace(/\D/g, "").slice(0, 19) })}
+            disabled={disabled}
+            className="font-mono tracking-wider pr-16"
+            placeholder="4111 1111 1111 1111"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">{detectCardBrand(data.cardNumber)}</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-2">
+          <Label>{t("card.expiryMonth")}</Label>
+          <Input type="text" inputMode="numeric" maxLength={2} value={data.expiryMonth} onChange={(e) => onChange({ ...data, expiryMonth: e.target.value.replace(/\D/g, "").slice(0, 2) })} disabled={disabled} placeholder="MM" />
+        </div>
+        <div className="space-y-2">
+          <Label>{t("card.expiryYear")}</Label>
+          <Input type="text" inputMode="numeric" maxLength={4} value={data.expiryYear} onChange={(e) => onChange({ ...data, expiryYear: e.target.value.replace(/\D/g, "").slice(0, 4) })} disabled={disabled} placeholder="YYYY" />
+        </div>
+        <div className="space-y-2">
+          <Label>{t("card.cvv")}</Label>
+          <div className="relative">
+            <Input type={showCvv ? "text" : "password"} autoComplete="off" inputMode="numeric" maxLength={4} value={data.cvv} onChange={(e) => onChange({ ...data, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) })} disabled={disabled} className="pr-10" />
+            <button type="button" onClick={() => setShowCvv((p) => !p)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+              {showCvv ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>{t("card.pin")}</Label>
+        <div className="relative">
+          <Input type={showPin ? "text" : "password"} autoComplete="off" inputMode="numeric" maxLength={8} value={data.pin ?? ""} onChange={(e) => onChange({ ...data, pin: e.target.value.replace(/\D/g, "").slice(0, 8) || undefined })} disabled={disabled} className="pr-10" />
+          <button type="button" onClick={() => setShowPin((p) => !p)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+            {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function NoteFields({ data, onChange, disabled, t }: { data: NoteItem; onChange: (d: NoteItem) => void; disabled: boolean; t: (key: string) => string }) {
+  return (
+    <div className="space-y-2">
+      <Label>{t("note.content")}</Label>
       <textarea
         value={data.content}
         onChange={(e) => onChange({ ...data, content: e.target.value })}
         disabled={disabled}
         rows={6}
-        className={inputClass}
-        placeholder="Your secure note..."
+        className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       />
-    </Field>
+    </div>
   );
 }
 
-function IdentityFields({
-  data,
-  onChange,
-  disabled,
-}: {
-  data: IdentityItem;
-  onChange: (d: IdentityItem) => void;
-  disabled: boolean;
-}) {
+function IdentityFields({ data, onChange, disabled, t }: { data: IdentityItem; onChange: (d: IdentityItem) => void; disabled: boolean; t: (key: string) => string }) {
   function updateAddress(field: string, value: string) {
     onChange({ ...data, address: { ...data.address, [field]: value } });
   }
@@ -508,148 +269,57 @@ function IdentityFields({
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="First Name">
-          <input
-            type="text"
-            value={data.firstName}
-            onChange={(e) => onChange({ ...data, firstName: e.target.value })}
-            disabled={disabled}
-            className={inputClass}
-            placeholder="John"
-          />
-        </Field>
-        <Field label="Last Name">
-          <input
-            type="text"
-            value={data.lastName}
-            onChange={(e) => onChange({ ...data, lastName: e.target.value })}
-            disabled={disabled}
-            className={inputClass}
-            placeholder="Doe"
-          />
-        </Field>
-      </div>
-      <Field label="Email">
-        <input
-          type="email"
-          value={data.email}
-          onChange={(e) => onChange({ ...data, email: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="john@example.com"
-        />
-      </Field>
-      <Field label="Phone">
-        <input
-          type="tel"
-          value={data.phone}
-          onChange={(e) => onChange({ ...data, phone: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="+1 555-0100"
-        />
-      </Field>
-
-      {/* Address */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-        <span className="text-sm font-medium text-slate-300">Address</span>
-        <div className="mt-3 space-y-3">
-          <Field label="Street">
-            <input
-              type="text"
-              value={data.address.street}
-              onChange={(e) => updateAddress("street", e.target.value)}
-              disabled={disabled}
-              className={inputClass}
-              placeholder="123 Main St"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="City">
-              <input
-                type="text"
-                value={data.address.city}
-                onChange={(e) => updateAddress("city", e.target.value)}
-                disabled={disabled}
-                className={inputClass}
-                placeholder="Seoul"
-              />
-            </Field>
-            <Field label="State / Province">
-              <input
-                type="text"
-                value={data.address.state}
-                onChange={(e) => updateAddress("state", e.target.value)}
-                disabled={disabled}
-                className={inputClass}
-                placeholder="Gangnam-gu"
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Postal Code">
-              <input
-                type="text"
-                value={data.address.postalCode}
-                onChange={(e) => updateAddress("postalCode", e.target.value)}
-                disabled={disabled}
-                className={inputClass}
-                placeholder="06000"
-              />
-            </Field>
-            <Field label="Country">
-              <input
-                type="text"
-                value={data.address.country}
-                onChange={(e) => updateAddress("country", e.target.value)}
-                disabled={disabled}
-                className={inputClass}
-                placeholder="South Korea"
-              />
-            </Field>
-          </div>
+        <div className="space-y-2">
+          <Label>{t("identity.firstName")}</Label>
+          <Input type="text" value={data.firstName} onChange={(e) => onChange({ ...data, firstName: e.target.value })} disabled={disabled} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t("identity.lastName")}</Label>
+          <Input type="text" value={data.lastName} onChange={(e) => onChange({ ...data, lastName: e.target.value })} disabled={disabled} />
         </div>
       </div>
+      <div className="space-y-2">
+        <Label>{t("identity.email")}</Label>
+        <Input type="email" value={data.email} onChange={(e) => onChange({ ...data, email: e.target.value })} disabled={disabled} />
+      </div>
+      <div className="space-y-2">
+        <Label>{t("identity.phone")}</Label>
+        <Input type="tel" value={data.phone} onChange={(e) => onChange({ ...data, phone: e.target.value })} disabled={disabled} />
+      </div>
+
+      {/* Address */}
+      <Card>
+        <CardContent className="p-4">
+          <span className="text-sm font-medium text-foreground">{t("identity.address")}</span>
+          <div className="mt-3 space-y-3">
+            <div className="space-y-2">
+              <Label>{t("identity.street")}</Label>
+              <Input type="text" value={data.address.street} onChange={(e) => updateAddress("street", e.target.value)} disabled={disabled} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{t("identity.city")}</Label>
+                <Input type="text" value={data.address.city} onChange={(e) => updateAddress("city", e.target.value)} disabled={disabled} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("identity.state")}</Label>
+                <Input type="text" value={data.address.state} onChange={(e) => updateAddress("state", e.target.value)} disabled={disabled} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{t("identity.postalCode")}</Label>
+                <Input type="text" value={data.address.postalCode} onChange={(e) => updateAddress("postalCode", e.target.value)} disabled={disabled} />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("identity.country")}</Label>
+                <Input type="text" value={data.address.country} onChange={(e) => updateAddress("country", e.target.value)} disabled={disabled} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Shared small components
-// ---------------------------------------------------------------------------
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <span className={labelClass}>{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-    </svg>
-  );
-}
-
-function EyeSlashIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
   );
 }
 
@@ -660,12 +330,9 @@ function Spinner() {
 const ITEM_TYPES: ItemType[] = ["login", "card", "note", "identity"];
 
 export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageProps) {
-  const [itemType, setItemType] = useState<ItemType>(
-    (editItem?.itemType as ItemType) ?? "login",
-  );
-  const [data, setData] = useState<VaultItemData>(
-    editItem?.data ?? defaultDataForType("login"),
-  );
+  const { t } = useTranslation();
+  const [itemType, setItemType] = useState<ItemType>((editItem?.itemType as ItemType) ?? "login");
+  const [data, setData] = useState<VaultItemData>(editItem?.data ?? defaultDataForType("login"));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -681,164 +348,107 @@ export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageP
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-
-    // Title is always required.
     if (!("title" in data) || !(data as { title: string }).title.trim()) {
-      setError("Title is required.");
+      setError(t("form.title") + " is required.");
       return;
     }
-
     setSaving(true);
     try {
       await onSave(itemType, data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save item.";
+      const message = err instanceof Error ? err.message : t("auth.unexpectedError");
       setError(message);
     } finally {
       setSaving(false);
     }
   }
 
-  // Update the data's title field generically.
   const title = "title" in data ? (data as { title: string }).title : "";
-
-  function setTitle(newTitle: string) {
-    setData({ ...data, title: newTitle } as VaultItemData);
-  }
-
-  // Notes field (present on all types).
+  function setTitle(newTitle: string) { setData({ ...data, title: newTitle } as VaultItemData); }
   const notes = "notes" in data ? (data as { notes: string }).notes : "";
+  function setNotes(newNotes: string) { setData({ ...data, notes: newNotes } as VaultItemData); }
 
-  function setNotes(newNotes: string) {
-    setData({ ...data, notes: newNotes } as VaultItemData);
-  }
+  const itemTypeLabels: Record<string, string> = {
+    login: t("itemType.login"),
+    card: t("itemType.card"),
+    note: t("itemType.note"),
+    identity: t("itemType.identity"),
+  };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      {/* Header */}
       <header className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Go back"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-        <h1 className="text-xl font-bold text-slate-100">
-          {mode === "create" ? "New Item" : "Edit Item"}
+        <Button variant="ghost" size="icon" onClick={onCancel} aria-label={t("form.goBack")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold text-foreground">
+          {mode === "create" ? t("form.newItem") : t("form.editItem")}
         </h1>
       </header>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-        {/* Item type selector (create mode only) */}
+        {/* Item type selector */}
         {mode === "create" && (
-          <div>
-            <span className={labelClass}>Item Type</span>
-            <div className="mt-1 flex gap-2" role="radiogroup" aria-label="Item type">
-              {ITEM_TYPES.map((t) => (
-                <button
-                  key={t}
+          <div className="space-y-2">
+            <Label>{t("form.itemType")}</Label>
+            <div className="flex gap-2" role="radiogroup" aria-label={t("form.itemType")}>
+              {ITEM_TYPES.map((tp) => (
+                <Button
+                  key={tp}
                   type="button"
                   role="radio"
-                  aria-checked={itemType === t}
-                  onClick={() => handleTypeChange(t)}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    itemType === t
-                      ? "bg-blue-600 text-white"
-                      : "border border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200"
-                  }`}
+                  aria-checked={itemType === tp}
+                  onClick={() => handleTypeChange(tp)}
+                  variant={itemType === tp ? "default" : "outline"}
+                  size="sm"
                 >
-                  {ITEM_TYPE_LABELS[t]}
-                </button>
+                  {itemTypeLabels[tp]}
+                </Button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Title (all types) */}
-        <Field label="Title">
-          <input
-            type="text"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={saving}
-            className={inputClass}
-            placeholder="Item title"
-            autoFocus
-          />
-        </Field>
+        {/* Title */}
+        <div className="space-y-2">
+          <Label>{t("form.title")}</Label>
+          <Input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} autoFocus />
+        </div>
 
         {/* Type-specific fields */}
-        {data.type === "login" && (
-          <LoginFields
-            data={data as LoginItem}
-            onChange={(d) => handleDataChange(d)}
-            disabled={saving}
-          />
-        )}
-        {data.type === "card" && (
-          <CardFields
-            data={data as CardItem}
-            onChange={(d) => handleDataChange(d)}
-            disabled={saving}
-          />
-        )}
-        {data.type === "note" && (
-          <NoteFields
-            data={data as NoteItem}
-            onChange={(d) => handleDataChange(d)}
-            disabled={saving}
-          />
-        )}
-        {data.type === "identity" && (
-          <IdentityFields
-            data={data as IdentityItem}
-            onChange={(d) => handleDataChange(d)}
-            disabled={saving}
-          />
-        )}
+        {data.type === "login" && <LoginFields data={data as LoginItem} onChange={handleDataChange} disabled={saving} t={t} />}
+        {data.type === "card" && <CardFields data={data as CardItem} onChange={handleDataChange} disabled={saving} t={t} />}
+        {data.type === "note" && <NoteFields data={data as NoteItem} onChange={handleDataChange} disabled={saving} t={t} />}
+        {data.type === "identity" && <IdentityFields data={data as IdentityItem} onChange={handleDataChange} disabled={saving} t={t} />}
 
-        {/* Notes (all types) */}
-        <Field label="Notes">
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label>{t("form.notes")}</Label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={saving}
             rows={3}
-            className={inputClass}
-            placeholder="Additional notes..."
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
           />
-        </Field>
+        </div>
 
         {/* Error */}
         {error && (
-          <div role="alert" className="rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
+          <div role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50"
-          >
-            {saving && <Spinner />}
-            {saving ? "Saving..." : mode === "create" ? "Create" : "Save Changes"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={saving}
-            className="rounded-lg border border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50"
-          >
-            Cancel
-          </button>
+          <Button type="submit" disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {mode === "create" ? t("form.create") : t("form.save")}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+            {t("form.cancel")}
+          </Button>
         </div>
       </form>
     </div>
