@@ -5,6 +5,7 @@ import { lock, logOut } from "../services/auth";
 import { useVaultStore } from "../stores/vault-store";
 import { ItemFormPage } from "./ItemFormPage";
 import { ItemDetailPage } from "./ItemDetailPage";
+import { ImportPage } from "./ImportPage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,7 +15,8 @@ type View =
   | { kind: "list" }
   | { kind: "detail"; itemId: string }
   | { kind: "create" }
-  | { kind: "edit"; itemId: string };
+  | { kind: "edit"; itemId: string }
+  | { kind: "import" };
 
 type FilterType = "all" | ItemType;
 
@@ -213,6 +215,12 @@ export function VaultPage() {
     await toggleFavorite(itemId);
   }
 
+  async function handleImport(importItems: Array<{ itemType: ItemType; data: VaultItemData; favorite: boolean }>) {
+    for (const item of importItems) {
+      await addItem(item.itemType, item.data, item.favorite);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // View routing
   // ---------------------------------------------------------------------------
@@ -262,6 +270,19 @@ export function VaultPage() {
     );
   }
 
+  // Import view.
+  if (view.kind === "import") {
+    return (
+      <ImportPage
+        onImport={handleImport}
+        onBack={() => {
+          loadItems();
+          setView({ kind: "list" });
+        }}
+      />
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // List view (default)
   // ---------------------------------------------------------------------------
@@ -272,6 +293,14 @@ export function VaultPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-100">My Vault</h1>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setView({ kind: "import" })}
+            className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950"
+            aria-label="Import from 1Password"
+          >
+            Import
+          </button>
           <button
             type="button"
             onClick={handleLock}
