@@ -142,15 +142,16 @@ export function VaultPage() {
   const updateItem = useVaultStore((s) => s.updateItem);
   const removeItem = useVaultStore((s) => s.removeItem);
   const toggleFavorite = useVaultStore((s) => s.toggleFavorite);
+  const startAutoSync = useVaultStore((s) => s.startAutoSync);
   const clearVault = useVaultStore((s) => s.clearVault);
 
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
 
-  // Load items on mount.
+  // Load items on mount and start background sync.
   useEffect(() => {
-    loadItems();
+    loadItems().then(() => startAutoSync());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

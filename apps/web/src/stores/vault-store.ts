@@ -7,6 +7,7 @@ import {
   fetchAndDecryptItems,
   deleteItem,
 } from "../services/vault";
+import { startSync, stopSync, mergeItems } from "../lib/sync";
 import { useAuthStore } from "./auth-store";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,7 @@ export interface VaultState {
   loading: boolean;
   error: string | null;
   selectedItemId: string | null;
+  syncing: boolean;
 
   loadItems: () => Promise<void>;
   addItem: (itemType: ItemType, data: VaultItemData, favorite?: boolean) => Promise<void>;
@@ -25,6 +27,8 @@ export interface VaultState {
   removeItem: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   setSelectedItem: (id: string | null) => void;
+  startAutoSync: () => void;
+  stopAutoSync: () => void;
   clearVault: () => void;
 }
 
@@ -49,6 +53,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   loading: false,
   error: null,
   selectedItemId: null,
+  syncing: false,
 
   async loadItems() {
     set({ loading: true, error: null });
@@ -127,7 +132,31 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     set({ selectedItemId: id });
   },
 
+  startAutoSync() {
+    startSync(
+      () => {
+        const { vaultKey, sessionToken } = useAuthStore.getState();
+        if (!vaultKey || !sessionToken) return null;
+        return { vaultKey, sessionToken };
+      },
+      (result) => {
+        if (result.updatedItems.length === 0 && result.deletedIds.length === 0) return;
+        set((state) => ({
+          items: mergeItems(state.items, result),
+          syncing: false,
+        }));
+      },
+    );
+    set({ syncing: true });
+  },
+
+  stopAutoSync() {
+    stopSync();
+    set({ syncing: false });
+  },
+
   clearVault() {
-    set({ items: [], loading: false, error: null, selectedItemId: null });
+    stopSync();
+    set({ items: [], loading: false, error: null, selectedItemId: null, syncing: false });
   },
 }));

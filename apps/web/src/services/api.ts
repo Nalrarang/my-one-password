@@ -259,3 +259,60 @@ export async function deleteVaultItem(
     headers: authHeaders(sessionToken),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Sync API
+// ---------------------------------------------------------------------------
+
+export interface SyncChangesResponse {
+  items: VaultItemResponse[];
+  syncToken: string;
+  hasMore: boolean;
+}
+
+export interface SyncPushItem {
+  id: string;
+  itemType: string;
+  encryptedData: string;
+  iv: string;
+  version: number;
+  favorite: boolean;
+  deleted: boolean;
+}
+
+export interface SyncPushResponse {
+  accepted: VaultItemResponse[];
+  conflicts: Array<{
+    clientItem: { id: string; version: number };
+    serverItem: VaultItemResponse;
+  }>;
+}
+
+/**
+ * Pull changes from the server since a given timestamp.
+ */
+export async function getSyncChanges(
+  sessionToken: string,
+  since: string,
+  deviceId: string,
+): Promise<SyncChangesResponse> {
+  const query = new URLSearchParams({ since, device_id: deviceId });
+  return request<SyncChangesResponse>(`/sync/changes?${query}`, {
+    headers: authHeaders(sessionToken),
+  });
+}
+
+/**
+ * Push locally modified items to the server.
+ */
+export async function pushSyncChanges(
+  sessionToken: string,
+  items: SyncPushItem[],
+  deviceId: string,
+): Promise<SyncPushResponse> {
+  return request<SyncPushResponse>("/sync/push", {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+    body: JSON.stringify({ items, device_id: deviceId }),
+  });
+}
