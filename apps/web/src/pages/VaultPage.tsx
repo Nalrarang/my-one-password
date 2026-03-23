@@ -12,6 +12,8 @@ import {
   UserCircle,
   Upload,
   Loader2,
+  Shield,
+  Download,
 } from "lucide-react";
 
 import { useTranslation } from "../lib/i18n";
@@ -23,6 +25,8 @@ import { Badge } from "../components/ui/badge";
 import { ItemFormPage } from "./ItemFormPage";
 import { ItemDetailPage } from "./ItemDetailPage";
 import { ImportPage } from "./ImportPage";
+import { BackupPage } from "./BackupPage";
+import { PasswordHealthPage } from "./PasswordHealthPage";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,7 +37,9 @@ type View =
   | { kind: "detail"; itemId: string }
   | { kind: "create" }
   | { kind: "edit"; itemId: string }
-  | { kind: "import" };
+  | { kind: "import" }
+  | { kind: "backup" }
+  | { kind: "health" };
 
 type FilterType = "all" | ItemType;
 
@@ -252,6 +258,25 @@ export function VaultPage() {
     );
   }
 
+  // Backup view.
+  if (view.kind === "backup") {
+    return (
+      <BackupPage
+        onBack={() => setView({ kind: "list" })}
+      />
+    );
+  }
+
+  // Password health view.
+  if (view.kind === "health") {
+    return (
+      <PasswordHealthPage
+        onBack={() => setView({ kind: "list" })}
+        onSelectItem={(itemId) => setView({ kind: "detail", itemId })}
+      />
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // List view (default)
   // ---------------------------------------------------------------------------
@@ -262,6 +287,22 @@ export function VaultPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">{t("vault.title")}</h1>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setView({ kind: "health" })}
+            aria-label={t("health.title")}
+          >
+            <Shield className="mr-1 h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setView({ kind: "backup" })}
+            aria-label={t("backup.title")}
+          >
+            <Download className="mr-1 h-4 w-4" />
+          </Button>
           <Button
             variant="outline"
             size="sm"

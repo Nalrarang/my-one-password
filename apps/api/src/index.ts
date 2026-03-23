@@ -5,6 +5,7 @@ import { logger } from 'hono/logger';
 import { authRoutes } from './routes/auth';
 import { vaultRoutes } from './routes/vault';
 import { syncRoutes } from './routes/sync';
+import { securityHeaders } from './middleware/security-headers';
 
 /**
  * Cloudflare Workers environment bindings.
@@ -44,6 +45,7 @@ app.use(
 );
 
 app.use('*', logger());
+app.use('*', securityHeaders);
 
 // ---------------------------------------------------------------------------
 // Health check

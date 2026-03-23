@@ -38,3 +38,10 @@ CREATE TABLE IF NOT EXISTS sync_state (
   sync_token TEXT NOT NULL,
   PRIMARY KEY (user_id, device_id)
 );
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT NOT NULL,
+  window_start TEXT NOT NULL,
+  request_count INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (key, window_start)
+);

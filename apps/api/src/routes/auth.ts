@@ -4,6 +4,7 @@ import type { Bindings, Variables } from '../index';
 import { hashAuthKey, generateId } from '../lib/crypto';
 import { generateSessionToken, createSession, deleteSession } from '../lib/session';
 import { authGuard } from '../middleware/auth-guard';
+import { rateLimit } from '../middleware/rate-limit';
 
 export const authRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -45,7 +46,7 @@ function isBase64String(v: unknown): v is string {
  *
  * Returns the same generic error for missing users to prevent enumeration.
  */
-authRoutes.get('/salt', async (c) => {
+authRoutes.get('/salt', rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }), async (c) => {
   const email = c.req.query('email');
 
   if (!email || !isValidEmail(email)) {
@@ -84,7 +85,7 @@ authRoutes.get('/salt', async (c) => {
  *
  * The auth key is hashed server-side with SHA-256 before storage.
  */
-authRoutes.post('/register', async (c) => {
+authRoutes.post('/register', rateLimit({ windowMs: 15 * 60 * 1000, max: 5 }), async (c) => {
   let body: Record<string, unknown>;
   try {
     body = await c.req.json();
@@ -160,7 +161,7 @@ authRoutes.post('/register', async (c) => {
  *   - email:   User's email address
  *   - authKey: Auth key (hex)
  */
-authRoutes.post('/login', async (c) => {
+authRoutes.post('/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }), async (c) => {
   let body: Record<string, unknown>;
   try {
     body = await c.req.json();
