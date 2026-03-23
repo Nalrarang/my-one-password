@@ -128,6 +128,8 @@ function LoginFields({
     setShowGenerator(false);
   }
 
+  const [showTotp, setShowTotp] = useState(!!data.totpSecret);
+
   return (
     <>
       <Field label="URL">
@@ -200,7 +202,106 @@ function LoginFields({
           </div>
         )}
       </Field>
+
+      {/* TOTP / 2FA Setup */}
+      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+        <button
+          type="button"
+          onClick={() => setShowTotp((v) => !v)}
+          className="flex w-full items-center justify-between text-sm font-medium text-slate-300"
+        >
+          <span className="flex items-center gap-2">
+            <ShieldIcon />
+            Two-Factor Authentication (TOTP)
+          </span>
+          <svg
+            className={`h-4 w-4 transition-transform ${showTotp ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+
+        {showTotp && (
+          <div className="mt-4 space-y-3">
+            <Field label="TOTP Secret (Base32)">
+              <input
+                type="text"
+                autoComplete="off"
+                value={data.totpSecret ?? ""}
+                onChange={(e) =>
+                  onChange({ ...data, totpSecret: e.target.value.toUpperCase().replace(/\s/g, "") || undefined })
+                }
+                disabled={disabled}
+                className={`${inputClass} font-mono tracking-wider`}
+                placeholder="JBSWY3DPEHPK3PXP"
+              />
+            </Field>
+
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Algorithm">
+                <select
+                  value={data.totpAlgorithm ?? "SHA1"}
+                  onChange={(e) =>
+                    onChange({ ...data, totpAlgorithm: e.target.value as "SHA1" | "SHA256" | "SHA512" })
+                  }
+                  disabled={disabled}
+                  className={inputClass}
+                >
+                  <option value="SHA1">SHA-1</option>
+                  <option value="SHA256">SHA-256</option>
+                  <option value="SHA512">SHA-512</option>
+                </select>
+              </Field>
+              <Field label="Digits">
+                <select
+                  value={data.totpDigits ?? 6}
+                  onChange={(e) =>
+                    onChange({ ...data, totpDigits: Number(e.target.value) as 6 | 8 })
+                  }
+                  disabled={disabled}
+                  className={inputClass}
+                >
+                  <option value={6}>6</option>
+                  <option value={8}>8</option>
+                </select>
+              </Field>
+              <Field label="Period (sec)">
+                <input
+                  type="number"
+                  min={15}
+                  max={120}
+                  value={data.totpPeriod ?? 30}
+                  onChange={(e) =>
+                    onChange({ ...data, totpPeriod: Number(e.target.value) || 30 })
+                  }
+                  disabled={disabled}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            {data.totpSecret && (
+              <p className="text-xs text-green-400">
+                TOTP configured. The code will appear on the detail page.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+    </svg>
   );
 }
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DecryptedVaultItem, LoginItem, CardItem, NoteItem, IdentityItem } from "@my-one-password/shared";
 import { ITEM_TYPE_LABELS, CRYPTO_CONFIG } from "@my-one-password/shared";
 import { copyToClipboard } from "../lib/clipboard";
+import { TOTPDisplay } from "../components/TOTPDisplay";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,6 +108,14 @@ function LoginDetail({ data }: { data: LoginItem }) {
       <PlainField label="URL" value={data.url} />
       <PlainField label="Username" value={data.username} />
       <ConcealedField label="Password" value={data.password} />
+      {data.totpSecret && (
+        <TOTPDisplay
+          secret={data.totpSecret}
+          algorithm={data.totpAlgorithm}
+          digits={data.totpDigits}
+          period={data.totpPeriod}
+        />
+      )}
     </div>
   );
 }
