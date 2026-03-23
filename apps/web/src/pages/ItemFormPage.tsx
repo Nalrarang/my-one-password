@@ -329,6 +329,11 @@ function GenerateIcon() {
   );
 }
 
+function formatCardNumber(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  return digits.replace(/(.{4})/g, "$1 ").trim();
+}
+
 function CardFields({
   data,
   onChange,
@@ -339,6 +344,12 @@ function CardFields({
   disabled: boolean;
 }) {
   const [showCvv, setShowCvv] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
+  function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 19);
+    onChange({ ...data, cardNumber: digits });
+  }
 
   return (
     <>
@@ -354,16 +365,21 @@ function CardFields({
         />
       </Field>
       <Field label="Card Number">
-        <input
-          type="text"
-          autoComplete="off"
-          inputMode="numeric"
-          value={data.cardNumber}
-          onChange={(e) => onChange({ ...data, cardNumber: e.target.value })}
-          disabled={disabled}
-          className={inputClass}
-          placeholder="4111 1111 1111 1111"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            autoComplete="off"
+            inputMode="numeric"
+            value={formatCardNumber(data.cardNumber)}
+            onChange={handleCardNumberChange}
+            disabled={disabled}
+            className={`${inputClass} font-mono tracking-wider pr-16`}
+            placeholder="4111 1111 1111 1111"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">
+            {detectCardBrand(data.cardNumber)}
+          </span>
+        </div>
       </Field>
       <div className="grid grid-cols-3 gap-3">
         <Field label="Month">
@@ -372,7 +388,7 @@ function CardFields({
             inputMode="numeric"
             maxLength={2}
             value={data.expiryMonth}
-            onChange={(e) => onChange({ ...data, expiryMonth: e.target.value })}
+            onChange={(e) => onChange({ ...data, expiryMonth: e.target.value.replace(/\D/g, "").slice(0, 2) })}
             disabled={disabled}
             className={inputClass}
             placeholder="MM"
@@ -384,7 +400,7 @@ function CardFields({
             inputMode="numeric"
             maxLength={4}
             value={data.expiryYear}
-            onChange={(e) => onChange({ ...data, expiryYear: e.target.value })}
+            onChange={(e) => onChange({ ...data, expiryYear: e.target.value.replace(/\D/g, "").slice(0, 4) })}
             disabled={disabled}
             className={inputClass}
             placeholder="YYYY"
@@ -398,7 +414,7 @@ function CardFields({
               inputMode="numeric"
               maxLength={4}
               value={data.cvv}
-              onChange={(e) => onChange({ ...data, cvv: e.target.value })}
+              onChange={(e) => onChange({ ...data, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) })}
               disabled={disabled}
               className={`${inputClass} pr-10`}
               placeholder="123"
@@ -414,8 +430,43 @@ function CardFields({
           </div>
         </Field>
       </div>
+      <Field label="PIN">
+        <div className="relative">
+          <input
+            type={showPin ? "text" : "password"}
+            autoComplete="off"
+            inputMode="numeric"
+            maxLength={8}
+            value={data.pin ?? ""}
+            onChange={(e) => onChange({ ...data, pin: e.target.value.replace(/\D/g, "").slice(0, 8) || undefined })}
+            disabled={disabled}
+            className={`${inputClass} pr-10`}
+            placeholder="Optional"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPin((p) => !p)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
+            aria-label={showPin ? "Hide PIN" : "Show PIN"}
+          >
+            {showPin ? <EyeSlashIcon /> : <EyeIcon />}
+          </button>
+        </div>
+      </Field>
     </>
   );
+}
+
+function detectCardBrand(number: string): string {
+  const n = number.replace(/\D/g, "");
+  if (/^4/.test(n)) return "Visa";
+  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "Mastercard";
+  if (/^3[47]/.test(n)) return "Amex";
+  if (/^6(?:011|5)/.test(n)) return "Discover";
+  if (/^35/.test(n)) return "JCB";
+  if (/^3(?:0[0-5]|[68])/.test(n)) return "Diners";
+  if (n.length > 0) return "Card";
+  return "";
 }
 
 function NoteFields({
@@ -450,6 +501,10 @@ function IdentityFields({
   onChange: (d: IdentityItem) => void;
   disabled: boolean;
 }) {
+  function updateAddress(field: string, value: string) {
+    onChange({ ...data, address: { ...data.address, [field]: value } });
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
@@ -494,6 +549,67 @@ function IdentityFields({
           placeholder="+1 555-0100"
         />
       </Field>
+
+      {/* Address */}
+      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+        <span className="text-sm font-medium text-slate-300">Address</span>
+        <div className="mt-3 space-y-3">
+          <Field label="Street">
+            <input
+              type="text"
+              value={data.address.street}
+              onChange={(e) => updateAddress("street", e.target.value)}
+              disabled={disabled}
+              className={inputClass}
+              placeholder="123 Main St"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="City">
+              <input
+                type="text"
+                value={data.address.city}
+                onChange={(e) => updateAddress("city", e.target.value)}
+                disabled={disabled}
+                className={inputClass}
+                placeholder="Seoul"
+              />
+            </Field>
+            <Field label="State / Province">
+              <input
+                type="text"
+                value={data.address.state}
+                onChange={(e) => updateAddress("state", e.target.value)}
+                disabled={disabled}
+                className={inputClass}
+                placeholder="Gangnam-gu"
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Postal Code">
+              <input
+                type="text"
+                value={data.address.postalCode}
+                onChange={(e) => updateAddress("postalCode", e.target.value)}
+                disabled={disabled}
+                className={inputClass}
+                placeholder="06000"
+              />
+            </Field>
+            <Field label="Country">
+              <input
+                type="text"
+                value={data.address.country}
+                onChange={(e) => updateAddress("country", e.target.value)}
+                disabled={disabled}
+                className={inputClass}
+                placeholder="South Korea"
+              />
+            </Field>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

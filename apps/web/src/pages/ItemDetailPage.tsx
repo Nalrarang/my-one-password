@@ -120,16 +120,58 @@ function LoginDetail({ data }: { data: LoginItem }) {
   );
 }
 
+function formatCardDisplay(number: string): string {
+  return number.replace(/(.{4})/g, "$1 ").trim();
+}
+
+function detectCardBrand(number: string): string {
+  const n = number.replace(/\D/g, "");
+  if (/^4/.test(n)) return "Visa";
+  if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "Mastercard";
+  if (/^3[47]/.test(n)) return "Amex";
+  if (/^6(?:011|5)/.test(n)) return "Discover";
+  if (/^35/.test(n)) return "JCB";
+  if (/^3(?:0[0-5]|[68])/.test(n)) return "Diners";
+  return "Card";
+}
+
 function CardDetail({ data }: { data: CardItem }) {
   return (
-    <div className="space-y-2">
-      <PlainField label="Cardholder Name" value={data.cardholderName} />
+    <div className="space-y-3">
+      {/* Card visual */}
+      <div className="rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 p-5 shadow-lg">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            {detectCardBrand(data.cardNumber)}
+          </span>
+          <svg className="h-8 w-8 text-slate-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="1" y="4" width="22" height="16" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="1" y="8" width="22" height="3" fill="currentColor" opacity="0.3" />
+          </svg>
+        </div>
+        <p className="mt-4 font-mono text-lg tracking-[0.25em] text-slate-200">
+          {data.cardNumber
+            ? formatCardDisplay(data.cardNumber)
+            : "\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022"}
+        </p>
+        <div className="mt-4 flex items-end justify-between">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Cardholder</p>
+            <p className="text-sm font-medium text-slate-300">{data.cardholderName || "—"}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-wider text-slate-500">Expires</p>
+            <p className="text-sm font-medium text-slate-300">
+              {data.expiryMonth && data.expiryYear ? `${data.expiryMonth}/${data.expiryYear}` : "—"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sensitive fields */}
       <ConcealedField label="Card Number" value={data.cardNumber} />
-      <PlainField
-        label="Expiry"
-        value={data.expiryMonth && data.expiryYear ? `${data.expiryMonth}/${data.expiryYear}` : ""}
-      />
       <ConcealedField label="CVV" value={data.cvv} />
+      {data.pin && <ConcealedField label="PIN" value={data.pin} />}
     </div>
   );
 }
@@ -147,11 +189,28 @@ function NoteDetail({ data }: { data: NoteItem }) {
 
 function IdentityDetail({ data }: { data: IdentityItem }) {
   const fullName = [data.firstName, data.lastName].filter(Boolean).join(" ");
+  const { address } = data;
+  const addressLines = [
+    address.street,
+    [address.city, address.state].filter(Boolean).join(", "),
+    [address.postalCode, address.country].filter(Boolean).join(" "),
+  ].filter(Boolean);
+
   return (
     <div className="space-y-2">
       <PlainField label="Name" value={fullName} />
       <PlainField label="Email" value={data.email} />
       <PlainField label="Phone" value={data.phone} />
+      {addressLines.length > 0 && (
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3">
+          <p className="text-xs font-medium text-slate-400">Address</p>
+          <div className="mt-1 space-y-0.5">
+            {addressLines.map((line, i) => (
+              <p key={i} className="text-sm text-slate-100">{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
