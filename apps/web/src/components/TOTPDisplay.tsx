@@ -89,7 +89,7 @@ export function TOTPDisplay({
           aria-label={`${t("detail.copy")} OTP`}
         >
           <span
-            className={`font-mono text-2xl font-bold tracking-widest ${
+            className={`font-mono text-xl font-bold tracking-wider sm:text-2xl sm:tracking-widest ${
               isWarning ? "text-amber-400" : "text-foreground"
             }`}
           >

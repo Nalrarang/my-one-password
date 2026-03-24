@@ -231,7 +231,7 @@ function CardDetail({ data }: { data: CardItem }) {
             <rect x="1" y="8" width="22" height="3" fill="currentColor" opacity="0.3" />
           </svg>
         </div>
-        <p className="mt-4 font-mono text-lg tracking-[0.25em] text-foreground">
+        <p className="mt-4 font-mono text-base tracking-[0.15em] text-foreground sm:text-lg sm:tracking-[0.25em]">
           {data.cardNumber
             ? formatCardDisplay(data.cardNumber)
             : "\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022"}
@@ -367,14 +367,14 @@ export function ItemDetailPage({ item, onEdit, onDelete, onBack }: ItemDetailPag
       )}
 
       {/* Actions */}
-      <div className="mt-6 flex items-center gap-3">
-        <Button onClick={onEdit}>
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <Button onClick={onEdit} className="w-full sm:w-auto">
           <Pencil className="h-4 w-4" />
           {t("detail.edit")}
         </Button>
         <Button
           variant="outline"
-          className="border-border text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          className="w-full border-border text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto"
           onClick={() => setDeleteDialogOpen(true)}
         >
           <Trash2 className="h-4 w-4" />

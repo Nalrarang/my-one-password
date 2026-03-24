@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { Loader2, Lock, Globe } from "lucide-react";
 import { signIn, signUp } from "../services/auth";
+import { hasSecretKey } from "../lib/secret-key";
 import { useTranslation } from "../lib/i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
 
 type AuthMode = "signin" | "signup";
 
@@ -18,6 +27,10 @@ export function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState<string | null>(null);
+  const [secretKeyInput, setSecretKeyInput] = useState("");
+
+  const needsSecretKey = mode === "signin" && !hasSecretKey();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,9 +50,15 @@ export function LoginPage() {
 
     try {
       if (mode === "signup") {
-        await signUp(email, masterPassword);
+        const secretKey = await signUp(email, masterPassword);
+        setShowSecretKey(secretKey);
+        return; // Don't navigate yet — user must see the secret key first.
       } else {
-        await signIn(email, masterPassword);
+        await signIn(
+          email,
+          masterPassword,
+          needsSecretKey ? secretKeyInput : undefined,
+        );
       }
     } catch (err) {
       const message =
@@ -53,7 +72,7 @@ export function LoginPage() {
   const isSignUp = mode === "signup";
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-4 sm:px-6">
       <div className="w-full max-w-sm space-y-6">
         {/* Language toggle */}
         <div className="flex justify-end">
@@ -124,6 +143,24 @@ export function LoginPage() {
                         disabled={loading}
                       />
                     </div>
+                    {needsSecretKey && (
+                      <div className="space-y-2">
+                        <Label htmlFor="secret-key">{t("secretKey.label")}</Label>
+                        <Input
+                          id="secret-key"
+                          type="text"
+                          required
+                          value={secretKeyInput}
+                          onChange={(e) => setSecretKeyInput(e.target.value)}
+                          disabled={loading}
+                          placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+                          className="font-mono"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t("secretKey.hint")}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -195,6 +232,35 @@ export function LoginPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Secret Key display dialog — shown once after sign-up */}
+      <Dialog open={!!showSecretKey} onOpenChange={() => {}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("secretKey.title")}</DialogTitle>
+            <DialogDescription>{t("secretKey.description")}</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-muted p-4 text-center">
+            <p className="font-mono text-lg tracking-wider text-foreground break-all">
+              {showSecretKey}
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">{t("secretKey.warning")}</p>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(showSecretKey!);
+              }}
+              variant="outline"
+            >
+              {t("secretKey.copy")}
+            </Button>
+            <Button onClick={() => setShowSecretKey(null)}>
+              {t("secretKey.saved")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

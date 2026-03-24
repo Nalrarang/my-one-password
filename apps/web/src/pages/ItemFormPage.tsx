@@ -142,7 +142,7 @@ function LoginFields({ data, onChange, disabled, t }: { data: LoginItem; onChang
                   placeholder="JBSWY3DPEHPK3PXP"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>{t("login.totpAlgorithm")}</Label>
                   <Select value={data.totpAlgorithm ?? "SHA1"} onChange={(e) => onChange({ ...data, totpAlgorithm: e.target.value as "SHA1" | "SHA256" | "SHA512" })} disabled={disabled}>
@@ -391,7 +391,7 @@ export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageP
         {mode === "create" && (
           <div className="space-y-2">
             <Label>{t("form.itemType")}</Label>
-            <div className="flex gap-2" role="radiogroup" aria-label={t("form.itemType")}>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("form.itemType")}>
               {ITEM_TYPES.map((tp) => (
                 <Button
                   key={tp}
@@ -441,12 +441,12 @@ export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageP
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" disabled={saving}>
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button type="submit" disabled={saving} className="w-full sm:w-auto">
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === "create" ? t("form.create") : t("form.save")}
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="w-full sm:w-auto">
             {t("form.cancel")}
           </Button>
         </div>

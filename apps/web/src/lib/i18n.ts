@@ -49,6 +49,19 @@ const translations: Record<Locale, Record<string, string>> = {
     "auth.passwordTooShort": "마스터 비밀번호는 8자 이상이어야 합니다",
     "auth.unexpectedError": "예기치 않은 오류가 발생했습니다",
 
+    // Secret Key
+    "secretKey.title": "시크릿 키가 생성되었습니다",
+    "secretKey.description":
+      "이 시크릿 키는 새 기기에서 로그인할 때 필요합니다. 안전한 곳에 저장해주세요.",
+    "secretKey.warning":
+      "이 키는 다시 표시되지 않습니다. 분실 시 금고에 접근할 수 없습니다.",
+    "secretKey.copy": "복사",
+    "secretKey.saved": "저장했습니다",
+    "secretKey.label": "시크릿 키",
+    "secretKey.hint": "회원가입 시 발급된 시크릿 키를 입력하세요",
+    "secretKey.required":
+      "이 기기에서 처음 로그인합니다. 시크릿 키를 입력해주세요.",
+
     // Auth - Unlock
     "auth.vaultLocked": "금고 잠김",
     "auth.unlockDescription": "마스터 비밀번호를 입력하여 잠금 해제하세요",
@@ -247,6 +260,19 @@ const translations: Record<Locale, Record<string, string>> = {
     "auth.passwordMismatch": "Passwords do not match",
     "auth.passwordTooShort": "Master password must be at least 8 characters",
     "auth.unexpectedError": "An unexpected error occurred",
+
+    // Secret Key
+    "secretKey.title": "Your Secret Key",
+    "secretKey.description":
+      "You'll need this secret key to sign in on new devices. Save it somewhere safe.",
+    "secretKey.warning":
+      "This key won't be shown again. If you lose it, you won't be able to access your vault.",
+    "secretKey.copy": "Copy",
+    "secretKey.saved": "I've Saved It",
+    "secretKey.label": "Secret Key",
+    "secretKey.hint": "Enter the secret key from when you signed up",
+    "secretKey.required":
+      "First time on this device. Please enter your secret key.",
 
     // Auth - Unlock
     "auth.vaultLocked": "Vault Locked",

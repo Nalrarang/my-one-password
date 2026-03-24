@@ -178,7 +178,7 @@ export function PasswordGenerator({
           type="text"
           readOnly
           value={generated}
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground focus:outline-none"
           aria-label={t("generator.title")}
         />
         <Button
@@ -265,7 +265,7 @@ export function PasswordGenerator({
           </div>
 
           {/* Character set checkboxes */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Checkbox
               id="pw-upper"
               label={t("generator.uppercase")}
@@ -341,7 +341,7 @@ export function PasswordGenerator({
           </div>
 
           {/* Checkboxes */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Checkbox
               id="pp-caps"
               label={t("generator.capitalize")}

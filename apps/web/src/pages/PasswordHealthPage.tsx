@@ -208,7 +208,7 @@ export function PasswordHealthPage({
       </Card>
 
       {/* Summary Cards */}
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {/* Weak */}
         <Card>
           <CardContent className="flex flex-col items-center gap-1 p-4">
@@ -335,7 +335,7 @@ export function PasswordHealthPage({
                         <button
                           type="button"
                           onClick={() => onSelectItem(item.id)}
-                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px]"
                         >
                           <span className="truncate font-medium">
                             {item.title}

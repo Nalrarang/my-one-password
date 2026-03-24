@@ -14,6 +14,13 @@ import { useAuthStore } from "../stores/auth-store";
 import { toBase64, fromBase64, toHex } from "../lib/encoding";
 import { clearCache } from "../lib/offline-cache";
 import { clearAuthData } from "../lib/offline-auth-cache";
+import {
+  generateSecretKey,
+  parseSecretKey,
+  storeSecretKey,
+  getStoredSecretKey,
+  clearSecretKey,
+} from "../lib/secret-key";
 
 // ---------------------------------------------------------------------------
 // Derived-key helpers (shared between sign-up and sign-in)
@@ -22,8 +29,13 @@ import { clearAuthData } from "../lib/offline-auth-cache";
 async function deriveAuthAndEncKeys(
   password: string,
   salt: Uint8Array,
+  secretKeyHex: string,
 ): Promise<{ authKeyBytes: Uint8Array; encKeyBytes: Uint8Array; masterKey: Uint8Array }> {
-  const masterKey = await deriveKeyFromPassword(password, salt);
+  // Combine password with secret key for defense-in-depth.
+  // Even if an attacker knows the master password, they cannot derive the
+  // correct master key without the device-local Secret Key.
+  const combinedPassword = password + "." + secretKeyHex;
+  const masterKey = await deriveKeyFromPassword(combinedPassword, salt);
   const [authKeyBytes, encKeyBytes] = await Promise.all([
     deriveKey(masterKey, "auth"),
     deriveKey(masterKey, "enc"),
@@ -47,10 +59,17 @@ async function deriveAuthAndEncKeys(
  *  6. Send registration payload to server
  *  7. Store session and vault key in memory
  */
-export async function signUp(email: string, password: string): Promise<void> {
+export async function signUp(email: string, password: string): Promise<string> {
+  const secretKey = generateSecretKey();
+  const secretKeyHex = parseSecretKey(secretKey);
+
   const salt = generateSalt();
 
-  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(password, salt);
+  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(
+    password,
+    salt,
+    secretKeyHex,
+  );
 
   // We no longer need the master key after deriving sub-keys.
   secureZero(masterKey);
@@ -71,11 +90,17 @@ export async function signUp(email: string, password: string): Promise<void> {
 
   secureZero(authKeyBytes);
 
+  // Store secret key on this device.
+  storeSecretKey(secretKey);
+
   // Persist session and unlock.
   const store = useAuthStore.getState();
   store.setSession(sessionToken, userId, email);
   store.setSalt(salt);
   store.setVaultKey(vaultKey);
+
+  // Return the secret key so the UI can display it to the user.
+  return secretKey;
 }
 
 /**
@@ -88,30 +113,50 @@ export async function signUp(email: string, password: string): Promise<void> {
  *  4. Unwrap the encrypted vault key returned by the server
  *  5. Store session and vault key in memory
  */
-export async function signIn(email: string, password: string): Promise<void> {
-  // Step 1 – get salt.
+export async function signIn(
+  email: string,
+  password: string,
+  secretKeyInput?: string,
+): Promise<void> {
+  // Use provided secret key (new device) or the one stored locally.
+  const secretKey = secretKeyInput || getStoredSecretKey();
+  if (!secretKey) {
+    throw new Error("Secret key required. Enter your secret key for this new device.");
+  }
+  const secretKeyHex = parseSecretKey(secretKey);
+
+  // Step 1 -- get salt.
   const { salt: saltB64 } = await api.getSalt(email);
   const salt = fromBase64(saltB64);
 
-  // Step 2 – derive keys.
-  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(password, salt);
+  // Step 2 -- derive keys (password + secret key).
+  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(
+    password,
+    salt,
+    secretKeyHex,
+  );
   secureZero(masterKey);
 
-  // Step 3 – authenticate.
+  // Step 3 -- authenticate.
   const { sessionToken, encVaultKey: encVaultKeyB64, userId } = await api.login(
     email,
     toHex(authKeyBytes),
   );
   secureZero(authKeyBytes);
 
-  // Step 4 – unwrap vault key.
+  // Step 4 -- unwrap vault key.
   const encCryptoKey = await importKey(encKeyBytes);
   secureZero(encKeyBytes);
 
   const wrappedVaultKey = fromBase64(encVaultKeyB64);
   const vaultKey = await unwrapVaultKey(wrappedVaultKey, encCryptoKey);
 
-  // Step 5 – persist session and unlock.
+  // If login succeeded and a key was manually provided, persist it on this device.
+  if (secretKeyInput) {
+    storeSecretKey(secretKeyInput);
+  }
+
+  // Step 5 -- persist session and unlock.
   const store = useAuthStore.getState();
   store.setSession(sessionToken, userId, email);
   store.setSalt(salt);
@@ -141,6 +186,13 @@ export async function unlock(password: string): Promise<void> {
     throw new Error("Cannot unlock: no active session.");
   }
 
+  // The secret key must be present on the device to unlock.
+  const secretKey = getStoredSecretKey();
+  if (!secretKey) {
+    throw new Error("Secret key not found on this device. Please sign in again.");
+  }
+  const secretKeyHex = parseSecretKey(secretKey);
+
   // After a page refresh, salt is null — fetch from server.
   if (!salt) {
     const { salt: saltB64 } = await api.getSalt(email);
@@ -148,8 +200,12 @@ export async function unlock(password: string): Promise<void> {
     useAuthStore.getState().setSalt(salt);
   }
 
-  // Re-derive keys from password + salt.
-  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(password, salt);
+  // Re-derive keys from password + secret key + salt.
+  const { authKeyBytes, encKeyBytes, masterKey } = await deriveAuthAndEncKeys(
+    password,
+    salt,
+    secretKeyHex,
+  );
   secureZero(masterKey);
 
   // Re-authenticate to obtain the encrypted vault key and refresh session.
@@ -193,6 +249,9 @@ export async function logOut(): Promise<void> {
     clearCache().catch(() => {}),
     clearAuthData().catch(() => {}),
   ]);
+
+  // Clear the device-local secret key on logout.
+  clearSecretKey();
 
   useAuthStore.getState().logout();
 }

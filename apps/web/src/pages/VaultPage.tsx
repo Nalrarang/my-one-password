@@ -284,16 +284,16 @@ export function VaultPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       {/* Header */}
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground">{t("vault.title")}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setView({ kind: "health" })}
             aria-label={t("health.title")}
           >
-            <Shield className="mr-1 h-4 w-4" />
+            <Shield className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
@@ -301,7 +301,7 @@ export function VaultPage() {
             onClick={() => setView({ kind: "backup" })}
             aria-label={t("backup.title")}
           >
-            <Download className="mr-1 h-4 w-4" />
+            <Download className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
@@ -309,8 +309,8 @@ export function VaultPage() {
             onClick={() => setView({ kind: "import" })}
             aria-label={t("vault.import")}
           >
-            <Upload className="mr-1 h-4 w-4" />
-            {t("vault.import")}
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("vault.import")}</span>
           </Button>
           <Button
             variant="outline"
@@ -318,8 +318,8 @@ export function VaultPage() {
             onClick={handleLock}
             aria-label={t("vault.lock")}
           >
-            <Lock className="mr-1 h-4 w-4" />
-            {t("vault.lock")}
+            <Lock className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("vault.lock")}</span>
           </Button>
           <Button
             variant="outline"
@@ -327,8 +327,8 @@ export function VaultPage() {
             onClick={handleLogout}
             aria-label={t("vault.signOut")}
           >
-            <LogOut className="mr-1 h-4 w-4" />
-            {t("vault.signOut")}
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("vault.signOut")}</span>
           </Button>
         </div>
       </header>
