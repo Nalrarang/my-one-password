@@ -93,7 +93,13 @@ authRoutes.post('/register', rateLimit({ windowMs: 15 * 60 * 1000, max: 5 }), as
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { email, salt, authKey, encVaultKey } = body;
+  const { email, salt, authKey, encVaultKey, inviteCode } = body;
+
+  // --- Invite code check -------------------------------------------------
+  const expectedCode = c.env.INVITE_CODE;
+  if (expectedCode && inviteCode !== expectedCode) {
+    return c.json({ error: 'Invalid invite code' }, 403);
+  }
 
   // --- Input validation --------------------------------------------------
   if (!isValidEmail(email)) {

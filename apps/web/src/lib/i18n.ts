@@ -47,6 +47,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "auth.derivingKeys": "키 생성 중...",
     "auth.passwordMismatch": "비밀번호가 일치하지 않습니다",
     "auth.passwordTooShort": "마스터 비밀번호는 8자 이상이어야 합니다",
+    "auth.inviteCode": "초대 코드",
+    "auth.inviteCodePlaceholder": "초대 코드를 입력하세요",
     "auth.unexpectedError": "예기치 않은 오류가 발생했습니다",
 
     // Secret Key
@@ -56,6 +58,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "secretKey.warning":
       "이 키는 다시 표시되지 않습니다. 분실 시 금고에 접근할 수 없습니다.",
     "secretKey.copy": "복사",
+    "secretKey.downloadKit": "Emergency Kit 다운로드",
     "secretKey.saved": "저장했습니다",
     "secretKey.label": "시크릿 키",
     "secretKey.hint": "회원가입 시 발급된 시크릿 키를 입력하세요",
@@ -259,6 +262,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "auth.derivingKeys": "Deriving keys...",
     "auth.passwordMismatch": "Passwords do not match",
     "auth.passwordTooShort": "Master password must be at least 8 characters",
+    "auth.inviteCode": "Invite Code",
+    "auth.inviteCodePlaceholder": "Enter your invite code",
     "auth.unexpectedError": "An unexpected error occurred",
 
     // Secret Key
@@ -268,6 +273,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "secretKey.warning":
       "This key won't be shown again. If you lose it, you won't be able to access your vault.",
     "secretKey.copy": "Copy",
+    "secretKey.downloadKit": "Download Emergency Kit",
     "secretKey.saved": "I've Saved It",
     "secretKey.label": "Secret Key",
     "secretKey.hint": "Enter the secret key from when you signed up",

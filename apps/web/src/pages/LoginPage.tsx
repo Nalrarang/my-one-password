@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Loader2, Lock, Globe } from "lucide-react";
-import { signIn, signUp } from "../services/auth";
+import { Loader2, Lock, Globe, Download } from "lucide-react";
+import { signIn, signUp, completeSignUp } from "../services/auth";
 import { hasSecretKey } from "../lib/secret-key";
 import { useTranslation } from "../lib/i18n";
+import { downloadEmergencyKit } from "../lib/emergency-kit";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -28,7 +29,11 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState<string | null>(null);
+  const [signUpResult, setSignUpResult] = useState<{
+    vaultKey: Uint8Array; sessionToken: string; userId: string; salt: Uint8Array;
+  } | null>(null);
   const [secretKeyInput, setSecretKeyInput] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
 
   const needsSecretKey = mode === "signin" && !hasSecretKey();
 
@@ -50,8 +55,9 @@ export function LoginPage() {
 
     try {
       if (mode === "signup") {
-        const secretKey = await signUp(email, masterPassword);
-        setShowSecretKey(secretKey);
+        const result = await signUp(email, masterPassword, inviteCode || undefined);
+        setShowSecretKey(result.secretKey);
+        setSignUpResult(result);
         return; // Don't navigate yet — user must see the secret key first.
       } else {
         await signIn(
@@ -203,6 +209,19 @@ export function LoginPage() {
                         disabled={loading}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-code">{t("auth.inviteCode")}</Label>
+                      <Input
+                        id="invite-code"
+                        type="text"
+                        required
+                        value={inviteCode}
+                        onChange={(e) => setInviteCode(e.target.value)}
+                        disabled={loading}
+                        placeholder={t("auth.inviteCodePlaceholder")}
+                        className="font-mono"
+                      />
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -246,7 +265,7 @@ export function LoginPage() {
             </p>
           </div>
           <p className="text-sm text-muted-foreground">{t("secretKey.warning")}</p>
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button
               onClick={() => {
                 navigator.clipboard.writeText(showSecretKey!);
@@ -255,7 +274,19 @@ export function LoginPage() {
             >
               {t("secretKey.copy")}
             </Button>
-            <Button onClick={() => setShowSecretKey(null)}>
+            <Button
+              onClick={() => downloadEmergencyKit(showSecretKey!, email, locale)}
+              variant="outline"
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              {t("secretKey.downloadKit")}
+            </Button>
+            <Button onClick={() => {
+              if (signUpResult) {
+                completeSignUp(signUpResult, email);
+              }
+              setShowSecretKey(null);
+            }}>
               {t("secretKey.saved")}
             </Button>
           </DialogFooter>

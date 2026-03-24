@@ -59,7 +59,7 @@ async function deriveAuthAndEncKeys(
  *  6. Send registration payload to server
  *  7. Store session and vault key in memory
  */
-export async function signUp(email: string, password: string): Promise<string> {
+export async function signUp(email: string, password: string, inviteCode?: string): Promise<{ secretKey: string; vaultKey: Uint8Array; sessionToken: string; userId: string; salt: Uint8Array }> {
   const secretKey = generateSecretKey();
   const secretKeyHex = parseSecretKey(secretKey);
 
@@ -86,6 +86,7 @@ export async function signUp(email: string, password: string): Promise<string> {
     toBase64(salt),
     toHex(authKeyBytes),
     toBase64(wrappedVaultKey),
+    inviteCode,
   );
 
   secureZero(authKeyBytes);
@@ -93,14 +94,23 @@ export async function signUp(email: string, password: string): Promise<string> {
   // Store secret key on this device.
   storeSecretKey(secretKey);
 
-  // Persist session and unlock.
-  const store = useAuthStore.getState();
-  store.setSession(sessionToken, userId, email);
-  store.setSalt(salt);
-  store.setVaultKey(vaultKey);
+  // Return credentials WITHOUT unlocking — the UI must show the Secret Key
+  // dialog first, then call completeSignUp() to unlock.
+  return { secretKey, vaultKey, sessionToken, userId, salt };
+}
 
-  // Return the secret key so the UI can display it to the user.
-  return secretKey;
+/**
+ * Complete sign-up by persisting session and unlocking the vault.
+ * Called from the UI after the user has seen and acknowledged the Secret Key.
+ */
+export function completeSignUp(
+  result: { vaultKey: Uint8Array; sessionToken: string; userId: string; salt: Uint8Array },
+  email: string,
+): void {
+  const store = useAuthStore.getState();
+  store.setSession(result.sessionToken, result.userId, email);
+  store.setSalt(result.salt);
+  store.setVaultKey(result.vaultKey);
 }
 
 /**

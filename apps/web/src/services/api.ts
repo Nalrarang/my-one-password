@@ -11,6 +11,7 @@ interface RegisterRequest {
   salt: string;
   authKey: string;
   encVaultKey: string;
+  inviteCode?: string;
 }
 
 interface RegisterResponse {
@@ -116,10 +117,11 @@ export async function register(
   salt: string,
   authKey: string,
   encVaultKey: string,
+  inviteCode?: string,
 ): Promise<RegisterResponse> {
   return request<RegisterResponse>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, salt, authKey, encVaultKey } satisfies RegisterRequest),
+    body: JSON.stringify({ email, salt, authKey, encVaultKey, inviteCode } satisfies RegisterRequest),
   });
 }
 

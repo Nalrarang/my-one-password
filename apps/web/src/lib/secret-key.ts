@@ -39,20 +39,37 @@ export function parseSecretKey(formatted: string): string {
 
 /** Store the formatted secret key in localStorage. */
 export function storeSecretKey(secretKey: string): void {
-  localStorage.setItem(SECRET_KEY_STORAGE, secretKey);
+  try {
+    localStorage.setItem(SECRET_KEY_STORAGE, secretKey);
+  } catch {
+    // localStorage may be unavailable (private mode, anti-tracking, etc.)
+  }
 }
 
 /** Retrieve the stored secret key (returns null if not on this device). */
 export function getStoredSecretKey(): string | null {
-  return localStorage.getItem(SECRET_KEY_STORAGE);
+  try {
+    return localStorage.getItem(SECRET_KEY_STORAGE);
+  } catch {
+    return null;
+  }
 }
 
 /** Clear the stored secret key (called on logout). */
 export function clearSecretKey(): void {
-  localStorage.removeItem(SECRET_KEY_STORAGE);
+  try {
+    localStorage.removeItem(SECRET_KEY_STORAGE);
+  } catch {
+    // Ignore.
+  }
 }
 
 /** Check whether this device has a stored secret key. */
 export function hasSecretKey(): boolean {
-  return localStorage.getItem(SECRET_KEY_STORAGE) !== null;
+  try {
+    return localStorage.getItem(SECRET_KEY_STORAGE) !== null;
+  } catch {
+    // If localStorage is unavailable, assume no key — show the input field.
+    return false;
+  }
 }

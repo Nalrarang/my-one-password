@@ -16,6 +16,7 @@ import { securityHeaders } from './middleware/security-headers';
 export type Bindings = {
   DB: D1Database;
   STORAGE: R2Bucket;
+  INVITE_CODE: string;
 };
 
 /**
@@ -37,7 +38,16 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin) => {
+      const allowed = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+      ];
+      // Allow Cloudflare Pages subdomains (*.pages.dev)
+      if (origin.endsWith('.pages.dev')) return origin;
+      if (allowed.includes(origin)) return origin;
+      return null;
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
