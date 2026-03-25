@@ -42,6 +42,8 @@ app.use(
       const allowed = [
         'http://localhost:5173',
         'http://localhost:3000',
+        'tauri://localhost',
+        'https://tauri.localhost',
       ];
       // Allow Cloudflare Pages subdomains (*.pages.dev)
       if (origin.endsWith('.pages.dev')) return origin;
