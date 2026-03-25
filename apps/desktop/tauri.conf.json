@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://my-one-password-api.nalrarang.workers.dev; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'"
+      "csp": null
     }
   },
   "bundle": {

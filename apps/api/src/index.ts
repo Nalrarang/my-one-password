@@ -38,18 +38,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/
 app.use(
   '*',
   cors({
-    origin: (origin) => {
-      const allowed = [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        'tauri://localhost',
-        'https://tauri.localhost',
-      ];
-      // Allow Cloudflare Pages subdomains (*.pages.dev)
-      if (origin.endsWith('.pages.dev')) return origin;
-      if (allowed.includes(origin)) return origin;
-      return null;
-    },
+    origin: '*',
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
