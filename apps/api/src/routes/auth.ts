@@ -15,6 +15,33 @@ export const authRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>
 const HEX_RE = /^[0-9a-fA-F]+$/;
 const BASE64_RE = /^[A-Za-z0-9+/]+=*$/;
 
+/** Argon2id salt length in bytes (must match the client's generateSalt). */
+const SALT_LENGTH = 16;
+
+/**
+ * Derive a stable, unpredictable pseudo-salt for an unknown email using
+ * HMAC-SHA256 keyed by a server secret. Returned in place of a 404/401 so a
+ * caller cannot distinguish registered from unregistered emails.
+ */
+async function deterministicSalt(pepper: string, email: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(pepper),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(email.toLowerCase()),
+  );
+  const bytes = new Uint8Array(sig).slice(0, SALT_LENGTH);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
 }
@@ -60,6 +87,12 @@ authRoutes.get('/salt', rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }), async 
     .first<{ salt: string }>();
 
   if (!user) {
+    // When a server pepper is configured, return a deterministic pseudo-salt
+    // so unknown emails are indistinguishable from registered ones. Without a
+    // pepper we cannot do so safely, so keep the generic error.
+    if (c.env.SALT_PEPPER) {
+      return c.json({ salt: await deterministicSalt(c.env.SALT_PEPPER, email) });
+    }
     return c.json({ error: 'Invalid email or auth key' }, 401);
   }
 

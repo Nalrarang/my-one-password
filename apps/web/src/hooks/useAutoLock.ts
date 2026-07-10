@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { CRYPTO_CONFIG } from "@my-one-password/shared";
 import { useAuthStore } from "../stores/auth-store";
+import { useVaultStore } from "../stores/vault-store";
 
 const ACTIVITY_EVENTS: Array<keyof DocumentEventMap> = [
   "mousedown",
@@ -24,7 +25,15 @@ const ACTIVITY_EVENTS: Array<keyof DocumentEventMap> = [
  */
 export function useAutoLock(lockOnHidden = false): void {
   const status = useAuthStore((s) => s.status);
-  const lockVault = useAuthStore((s) => s.lock);
+  const lockAuth = useAuthStore((s) => s.lock);
+  const clearVault = useVaultStore((s) => s.clearVault);
+
+  // Drop decrypted items and stop sync before zeroing the vault key, so
+  // plaintext clearing does not depend on component-unmount ordering.
+  const lockVault = useCallback(() => {
+    clearVault();
+    lockAuth();
+  }, [clearVault, lockAuth]);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

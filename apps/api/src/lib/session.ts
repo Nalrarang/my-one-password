@@ -25,6 +25,25 @@ export function generateSessionToken(): string {
 }
 
 /**
+ * Hash a session token for at-rest storage.
+ *
+ * Only the SHA-256 hash of the token is stored in D1, so a database leak does
+ * not expose usable session tokens (the raw token lives only on the client).
+ *
+ * @param token - The raw session token
+ * @returns The SHA-256 hash as a lowercase hex string
+ */
+export async function hashToken(token: string): Promise<string> {
+  const bytes = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const parts: string[] = [];
+  for (const b of new Uint8Array(digest)) {
+    parts.push(b.toString(16).padStart(2, '0'));
+  }
+  return parts.join('');
+}
+
+/**
  * Create a new session row in D1.
  *
  * @param db      - D1 database binding
@@ -44,7 +63,7 @@ export async function createSession(
     .prepare(
       `INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)`,
     )
-    .bind(token, userId, expiresAt)
+    .bind(await hashToken(token), userId, expiresAt)
     .run();
 }
 
@@ -60,6 +79,6 @@ export async function deleteSession(
 ): Promise<void> {
   await db
     .prepare(`DELETE FROM sessions WHERE token = ?`)
-    .bind(token)
+    .bind(await hashToken(token))
     .run();
 }

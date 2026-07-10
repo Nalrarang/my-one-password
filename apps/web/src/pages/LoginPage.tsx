@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Loader2, Lock, Globe, Download } from "lucide-react";
+import { CRYPTO_CONFIG } from "@my-one-password/shared";
 import { signIn, signUp, completeSignUp } from "../services/auth";
 import { hasSecretKey } from "../lib/secret-key";
 import { useTranslation } from "../lib/i18n";
 import { downloadEmergencyKit } from "../lib/emergency-kit";
+import { copyToClipboard } from "../lib/clipboard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -268,7 +270,7 @@ export function LoginPage() {
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button
               onClick={() => {
-                navigator.clipboard.writeText(showSecretKey!);
+                copyToClipboard(showSecretKey!, CRYPTO_CONFIG.CLIPBOARD_CLEAR_TIMEOUT);
               }}
               variant="outline"
             >

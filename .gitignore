@@ -13,6 +13,13 @@ __pycache__/
 *.pem
 *.p12
 *.keystore
+*.jks
+key.properties
+
+# Android/desktop build artifacts (never commit signed binaries)
+*.apk
+*.idsig
+*.aab
 
 # Build
 dist/

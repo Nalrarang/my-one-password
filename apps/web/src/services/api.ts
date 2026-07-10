@@ -2,6 +2,22 @@ const DEFAULT_BASE_URL = "http://localhost:8787/api";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL;
 
+// In production the API must be reached over HTTPS, and the URL must be set
+// explicitly — never silently fall back to the localhost dev default, which
+// would send the auth key and email over plaintext HTTP.
+if (import.meta.env.PROD) {
+  if (!import.meta.env.VITE_API_BASE_URL) {
+    throw new Error(
+      "VITE_API_BASE_URL must be set for production builds (refusing localhost fallback).",
+    );
+  }
+  if (!baseUrl.startsWith("https://")) {
+    throw new Error(
+      `VITE_API_BASE_URL must use https:// in production, got: ${baseUrl}`,
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------

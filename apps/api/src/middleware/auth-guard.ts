@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'hono';
 
 import type { Bindings, Variables } from '../index';
+import { hashToken } from '../lib/session';
 
 /**
  * Authentication guard middleware.
@@ -28,11 +29,14 @@ export const authGuard: MiddlewareHandler<{
     return c.json({ error: 'Empty bearer token' }, 401);
   }
 
+  // Sessions are stored as SHA-256 hashes; hash the presented token to match.
+  const tokenHash = await hashToken(token);
+
   // Look up the session in D1
   const session = await c.env.DB.prepare(
     `SELECT user_id, expires_at FROM sessions WHERE token = ?`,
   )
-    .bind(token)
+    .bind(tokenHash)
     .first<{ user_id: string; expires_at: string }>();
 
   if (!session) {
@@ -44,7 +48,7 @@ export const authGuard: MiddlewareHandler<{
   if (expiresAt <= new Date()) {
     // Opportunistically clean up the expired session
     await c.env.DB.prepare(`DELETE FROM sessions WHERE token = ?`)
-      .bind(token)
+      .bind(tokenHash)
       .run();
     return c.json({ error: 'Session expired' }, 401);
   }

@@ -17,6 +17,11 @@ export type Bindings = {
   DB: D1Database;
   STORAGE: R2Bucket;
   INVITE_CODE: string;
+  // Optional server secret. When set, /auth/salt returns a deterministic
+  // pseudo-salt for unknown emails so responses are indistinguishable from
+  // registered accounts (blocks account enumeration). Set via:
+  //   wrangler secret put SALT_PEPPER
+  SALT_PEPPER?: string;
 };
 
 /**
@@ -38,7 +43,24 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>().basePath('/
 app.use(
   '*',
   cors({
-    origin: '*',
+    // Bearer-token API (no cookies), but an explicit allowlist still blocks
+    // arbitrary sites from calling the unauthenticated endpoints
+    // (salt/login/register) for enumeration or credential stuffing.
+    origin: (origin) => {
+      const allowed = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'tauri://localhost',
+        'https://tauri.localhost',
+        // Tauri webview origin on Android/Windows (the missing entry that
+        // 20ee66d worked around by opening CORS to '*').
+        'http://tauri.localhost',
+      ];
+      // Allow Cloudflare Pages deployments (*.pages.dev).
+      if (origin.endsWith('.pages.dev')) return origin;
+      if (allowed.includes(origin)) return origin;
+      return null;
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
