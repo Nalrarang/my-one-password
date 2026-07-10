@@ -13,7 +13,6 @@ import * as api from "./api";
 import { useAuthStore } from "../stores/auth-store";
 import { toBase64, fromBase64, toHex } from "../lib/encoding";
 import { clearCache } from "../lib/offline-cache";
-import { clearAuthData } from "../lib/offline-auth-cache";
 import {
   generateSecretKey,
   parseSecretKey,
@@ -254,11 +253,8 @@ export async function logOut(): Promise<void> {
     }
   }
 
-  // Clear offline caches so no encrypted data persists after logout.
-  await Promise.all([
-    clearCache().catch(() => {}),
-    clearAuthData().catch(() => {}),
-  ]);
+  // Clear the offline cache so no encrypted data persists after logout.
+  await clearCache().catch(() => {});
 
   // Clear the device-local secret key on logout.
   clearSecretKey();

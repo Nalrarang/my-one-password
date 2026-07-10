@@ -11,7 +11,6 @@ const DB_NAME = "my-one-password";
 const DB_VERSION = 1;
 
 const ITEMS_STORE = "encrypted-items";
-const AUTH_STORE = "auth-cache";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,8 +37,8 @@ export interface CachedItem {
 /**
  * Open (or create/upgrade) the IndexedDB database.
  *
- * Both the `encrypted-items` and `auth-cache` object stores are created in
- * the `onupgradeneeded` handler so a single version bump covers both stores.
+ * Creates the `encrypted-items` object store, which holds only AES-GCM
+ * ciphertext for offline access.
  */
 export function openCache(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -50,10 +49,6 @@ export function openCache(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(ITEMS_STORE)) {
         db.createObjectStore(ITEMS_STORE, { keyPath: "id" });
-      }
-
-      if (!db.objectStoreNames.contains(AUTH_STORE)) {
-        db.createObjectStore(AUTH_STORE, { keyPath: "key" });
       }
     };
 
