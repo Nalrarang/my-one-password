@@ -1,7 +1,30 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+// Content-Security-Policy for the built app. Injected as a <meta> only in
+// production builds (Cloudflare Pages does not reliably apply the CSP line
+// from _headers, and a meta CSP in dev would break Vite's HMR). frame-ancestors
+// is omitted here (ignored in meta) — X-Frame-Options: DENY covers framing.
+const PROD_CSP =
+  "default-src 'self'; " +
+  "connect-src 'self' https://my-one-password-api.nalrarang.workers.dev; " +
+  "script-src 'self' 'wasm-unsafe-eval'; " +
+  "style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data: blob:; " +
+  "object-src 'none'; base-uri 'none'; manifest-src 'self'; worker-src 'self'";
+
+const cspMetaPlugin: Plugin = {
+  name: "inject-csp-meta",
+  apply: "build",
+  transformIndexHtml(html: string): string {
+    return html.replace(
+      /<head>/i,
+      `<head>\n    <meta http-equiv="Content-Security-Policy" content="${PROD_CSP}" />`,
+    );
+  },
+};
 
 export default defineConfig({
   resolve: {
@@ -21,6 +44,7 @@ export default defineConfig({
     target: "esnext",
   },
   plugins: [
+    cspMetaPlugin,
     react(),
     tailwindcss(),
     VitePWA({
