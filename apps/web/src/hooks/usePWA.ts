@@ -20,6 +20,9 @@ export function usePWA(): PWAState {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    // In the Tauri native shell the binary updater handles updates
+    // (see useNativeUpdater); skip the PWA flow to avoid a double prompt.
+    if ("isTauri" in window && (window as { isTauri?: boolean }).isTauri) return;
 
     async function register() {
       try {

@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop-updater",
+  "description": "Auto-updater and relaunch permissions (desktop only)",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["main"],
+  "permissions": ["updater:default", "process:allow-restart"]
+}

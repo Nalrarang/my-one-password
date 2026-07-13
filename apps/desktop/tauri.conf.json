@@ -27,7 +27,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,5 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxNjJEOUM5RUUwRkVBRDkKUldUWjZnL3V5ZGxpWVQxeEc3UHNURks5VGVvTm9EYUxKaGUxQld6anRkYllpcGN2R1duZjdsWHEK",
+      "endpoints": [
+        "https://github.com/Nalrarang/my-one-password-releases/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
