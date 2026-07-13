@@ -7,7 +7,7 @@
     "frontendDist": "../web/dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev --workspace=@my-one-password/web",
-    "beforeBuildCommand": "VITE_API_BASE_URL=https://my-one-password-api.nalrarang.workers.dev/api npm run build --workspace=@my-one-password/web"
+    "beforeBuildCommand": "npx cross-env VITE_API_BASE_URL=https://my-one-password-api.nalrarang.workers.dev/api npm run build --workspace=@my-one-password/web"
   },
   "app": {
     "windows": [
