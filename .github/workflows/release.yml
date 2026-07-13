@@ -1,0 +1,68 @@
+name: release
+
+# Builds signed desktop apps (macOS universal + Windows) and publishes them
+# as a GitHub Release with an updater manifest (latest.json) that the app's
+# auto-updater reads. Triggered only by version tags, which only maintainers
+# can push — so the signing secrets are never exposed to fork PRs.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            args: "--target universal-apple-darwin"
+          - platform: windows-latest
+            rust-targets: ""
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "apps/desktop -> target"
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      # web imports @my-one-password/{crypto,shared} from their built dist/,
+      # so build those packages before Tauri's beforeBuildCommand builds web.
+      - name: Build shared + crypto packages
+        run: npm run build --workspace=@my-one-password/shared --workspace=@my-one-password/crypto
+
+      - name: Build and release desktop app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "My One Password ${{ github.ref_name }}"
+          releaseBody: "Download the installer for your platform below. Desktop apps auto-update on next launch."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
