@@ -1,0 +1,75 @@
+name: android
+
+# Builds a signed universal release APK for manual sideloading. Android is not
+# covered by the Tauri auto-updater, so this runs on demand (workflow_dispatch)
+# and publishes the APK as a downloadable build artifact.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Rust + Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "apps/desktop -> target"
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Build shared + crypto packages
+        run: npm run build --workspace=@my-one-password/shared --workspace=@my-one-password/crypto
+
+      - name: Write signing config from secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > apps/desktop/gen/android/key.properties <<EOF
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build signed APK
+        working-directory: apps/desktop
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: npm run tauri -- android build --apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-one-password-apk
+          path: apps/desktop/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
