@@ -277,7 +277,7 @@ export function LoginPage() {
               {t("secretKey.copy")}
             </Button>
             <Button
-              onClick={() => downloadEmergencyKit(showSecretKey!, email, locale)}
+              onClick={() => downloadEmergencyKit(showSecretKey!, email)}
               variant="outline"
             >
               <Download className="mr-1.5 h-4 w-4" />
