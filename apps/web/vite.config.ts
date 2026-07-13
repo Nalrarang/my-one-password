@@ -1,7 +1,35 @@
+import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+// libsodium-wrappers-sumo's build imports a sibling "./libsodium-sumo.(mjs|js)"
+// that is only a symlink to the separate libsodium-sumo package. `npm install`
+// creates that symlink but `npm ci` (CI) does not, so the bundler can't resolve
+// it. Redirect those imports to the real libsodium-sumo package, resolved as a
+// sibling in the same node_modules as the importer.
+const libsodiumSumoFix: Plugin = {
+  name: "libsodium-sumo-symlink-fix",
+  enforce: "pre",
+  resolveId(source, importer) {
+    if (
+      importer &&
+      importer.includes("libsodium-wrappers-sumo") &&
+      /\/libsodium-sumo\.(mjs|js)$/.test(source)
+    ) {
+      const marker = "node_modules";
+      const idx = importer.lastIndexOf(marker);
+      if (idx === -1) return null;
+      const nodeModules = importer.slice(0, idx + marker.length);
+      const rel = source.endsWith(".mjs")
+        ? "libsodium-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs"
+        : "libsodium-sumo/dist/modules-sumo/libsodium-sumo.js";
+      return join(nodeModules, rel);
+    }
+    return null;
+  },
+};
 
 // Content-Security-Policy for the built app. Injected as a <meta> only in
 // production builds (Cloudflare Pages does not reliably apply the CSP line
@@ -44,6 +72,7 @@ export default defineConfig({
     target: "esnext",
   },
   plugins: [
+    libsodiumSumoFix,
     cspMetaPlugin,
     react(),
     tailwindcss(),
