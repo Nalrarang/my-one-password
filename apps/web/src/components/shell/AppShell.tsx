@@ -155,14 +155,14 @@ function BottomTabs({ section, onNavigate, onAdd }: Pick<AppShellProps, "section
   const vaultActive = ["all", "login", "card", "note", "identity", "favorites"].includes(section);
 
   const tab = (active: boolean) =>
-    `flex flex-1 flex-col items-center gap-[3px] pt-2 pb-0.5 text-[10px] font-semibold transition-colors ${
+    `flex flex-1 flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
       active ? "text-[var(--accent)]" : "text-[var(--text-3)]"
     }`;
 
   return (
     <nav
-      className="flex items-stretch border-t border-[var(--border)] px-5 pt-2 backdrop-blur-[18px]"
-      style={{ background: "var(--nav-bg)", paddingBottom: "max(26px, env(safe-area-inset-bottom))" }}
+      className="flex items-center border-t border-[var(--border)] px-5 pt-2 backdrop-blur-[18px]"
+      style={{ background: "var(--nav-bg)", paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
     >
       <button className={tab(vaultActive)} onClick={() => onNavigate("all")}>
         <Lock className="h-[22px] w-[22px]" />
@@ -172,13 +172,13 @@ function BottomTabs({ section, onNavigate, onAdd }: Pick<AppShellProps, "section
         <ShieldAlert className="h-[22px] w-[22px]" />
         {t("shell.checker")}
       </button>
-      <div className="flex flex-1 items-start justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <button
           onClick={onAdd}
           aria-label={t("vault.addItem")}
-          className="-mt-1.5 grid h-[52px] w-[52px] place-items-center rounded-full bg-[var(--accent)] text-white shadow-[0_6px_16px_var(--accent-soft)] active:brightness-95"
+          className="grid h-12 w-12 place-items-center rounded-full bg-[var(--accent)] text-white shadow-[0_4px_12px_var(--accent-soft)] active:brightness-95"
         >
-          <Plus className="h-[26px] w-[26px]" strokeWidth={2.2} />
+          <Plus className="h-6 w-6" strokeWidth={2.2} />
         </button>
       </div>
       <button className={tab(section === "generator")} onClick={() => onNavigate("generator")}>
