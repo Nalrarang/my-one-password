@@ -33,21 +33,21 @@ export function getSubtitle(item: DecryptedVaultItem): string {
 
 const PALETTE = ["#4769F7", "#7C5CFC", "#EC4899", "#F59E0B", "#10B981", "#06B6D4", "#EF4444", "#6366F1"];
 
-function colorOf(seed: string): string {
+export function colorOf(seed: string): string {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return PALETTE[h % PALETTE.length];
 }
 
-function monoOf(title: string): string {
+export function monoOf(title: string): string {
   const c = title.trim()[0];
   return c ? c.toUpperCase() : "?";
 }
 
-type Strength = { key: "weak" | "medium" | "strong"; color: string; soft: string };
+export type Strength = { key: "weak" | "medium" | "strong"; color: string; soft: string; pct: string };
 
 /** Lightweight strength for list badges (full analysis lives in the health report). */
-function strengthOf(item: DecryptedVaultItem): Strength | null {
+export function strengthOf(item: DecryptedVaultItem): Strength | null {
   if (item.data.type !== "login") return null;
   const pw = item.data.password;
   if (!pw) return null;
@@ -56,12 +56,12 @@ function strengthOf(item: DecryptedVaultItem): Strength | null {
   if (/[A-Z]/.test(pw)) cls++;
   if (/[0-9]/.test(pw)) cls++;
   if (/[^a-zA-Z0-9]/.test(pw)) cls++;
-  if (pw.length < 8 || cls <= 1) return { key: "weak", color: "var(--neg)", soft: "var(--neg-soft)" };
-  if (pw.length >= 12 && cls >= 3) return { key: "strong", color: "var(--pos)", soft: "var(--pos-soft)" };
-  return { key: "medium", color: "var(--warn)", soft: "var(--warn-soft)" };
+  if (pw.length < 8 || cls <= 1) return { key: "weak", color: "var(--neg)", soft: "var(--neg-soft)", pct: "34%" };
+  if (pw.length >= 12 && cls >= 3) return { key: "strong", color: "var(--pos)", soft: "var(--pos-soft)", pct: "100%" };
+  return { key: "medium", color: "var(--warn)", soft: "var(--warn-soft)", pct: "67%" };
 }
 
-function Mono({ title, size, radius, font }: { title: string; size: number; radius: number; font: number }) {
+export function Mono({ title, size, radius, font }: { title: string; size: number; radius: number; font: number }) {
   return (
     <div
       className="grid flex-none place-items-center font-bold text-white"

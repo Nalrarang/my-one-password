@@ -10,9 +10,9 @@ import { useIsDesktop } from "../hooks/useMediaQuery";
 import { copyToClipboard } from "../lib/clipboard";
 import { AppShell, type Section } from "../components/shell/AppShell";
 import { VaultList, getTitle, getSubtitle } from "../components/shell/VaultList";
+import { ItemDetail } from "../components/shell/ItemDetail";
 import { PasswordGenerator } from "../components/PasswordGenerator";
 import { ItemFormPage } from "./ItemFormPage";
-import { ItemDetailPage } from "./ItemDetailPage";
 import { ImportPage } from "./ImportPage";
 import { BackupPage } from "./BackupPage";
 import { PasswordHealthPage } from "./PasswordHealthPage";
@@ -140,11 +140,12 @@ export function VaultPage() {
       const item = items.find((i) => i.id === view.itemId);
       if (!item) return null;
       return (
-        <ItemDetailPage
+        <ItemDetail
           item={item}
           onEdit={() => setView({ kind: "edit", itemId: item.id })}
           onDelete={() => handleDelete(item.id)}
           onBack={() => setView({ kind: "list" })}
+          onToggleFavorite={(id) => toggleFavorite(id)}
         />
       );
     }
@@ -154,10 +155,9 @@ export function VaultPage() {
   function noSelection() {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--canvas)] text-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full bg-[var(--panel-2)] text-[var(--text-4)]">
-          <KeyRound className="h-7 w-7" />
-        </div>
-        <div className="mt-4 text-[15px] font-medium text-[var(--text-3)]">{t("detail.selectPrompt")}</div>
+        <KeyRound className="h-12 w-12 text-[var(--text-4)]" strokeWidth={1.4} />
+        <div className="mt-[18px] text-[15px] font-semibold text-[var(--text-2)]">{t("detail.selectPrompt")}</div>
+        <div className="mt-1 max-w-xs text-[13px] text-[var(--text-3)]">{t("detail.selectHint")}</div>
       </div>
     );
   }
