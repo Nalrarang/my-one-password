@@ -196,8 +196,10 @@ export function VaultPage() {
     );
   } else if (section === "generator") {
     content = (
-      <div className="flex h-full items-start justify-center overflow-y-auto bg-[var(--canvas)] p-6">
-        <div className="w-full max-w-lg">
+      <div className="h-full overflow-y-auto bg-[var(--canvas)] px-5 py-7">
+        <div className="mx-auto max-w-[680px]">
+          <div className="mb-1.5 text-2xl font-bold text-[var(--text)]">{t("generator.title")}</div>
+          <div className="mb-6 text-[13px] text-[var(--text-2)]">{t("generator.subtitle")}</div>
           <PasswordGenerator onSelect={(pw) => copyToClipboard(pw, CRYPTO_CONFIG.CLIPBOARD_CLEAR_TIMEOUT)} />
         </div>
       </div>

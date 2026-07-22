@@ -105,7 +105,7 @@ export function PasswordHealthPage({
   // Loading state
   if (loading || !report) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mx-auto h-full max-w-[940px] overflow-y-auto px-5 py-7">
         <header className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -133,7 +133,7 @@ export function PasswordHealthPage({
   );
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto h-full max-w-[940px] overflow-y-auto px-5 py-7">
       {/* Header */}
       <header className="flex items-center gap-3">
         <Button

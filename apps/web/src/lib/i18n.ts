@@ -189,6 +189,7 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Password generator
     "generator.title": "비밀번호 생성기",
+    "generator.subtitle": "강력하고 안전한 비밀번호를 즉시 만들어보세요",
     "generator.password": "비밀번호",
     "generator.passphrase": "패스프레이즈",
     "generator.length": "길이",
@@ -434,6 +435,7 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // Password generator
     "generator.title": "Password Generator",
+    "generator.subtitle": "Create a strong, secure password instantly",
     "generator.password": "Password",
     "generator.passphrase": "Passphrase",
     "generator.length": "Length",
