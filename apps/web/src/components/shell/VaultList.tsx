@@ -176,7 +176,7 @@ function DesktopList({
         }}
         className="grid h-[30px] w-[30px] flex-none place-items-center rounded-lg text-[var(--text-4)] hover:bg-[var(--hover)]"
       >
-        <Star className={`h-[17px] w-[17px] ${item.favorite ? "fill-[var(--warn)] text-[var(--warn)]" : ""}`} />
+        <Star className={`h-[17px] w-[17px] ${item.favorite ? "fill-[#FFCD00] text-[#FFCD00]" : ""}`} />
       </span>
     );
   }
@@ -398,7 +398,7 @@ function MobileList({
                       }}
                       className="flex-none text-[var(--text-4)]"
                     >
-                      <Star className={`h-[15px] w-[15px] ${item.favorite ? "fill-[var(--warn)] text-[var(--warn)]" : ""}`} />
+                      <Star className={`h-[15px] w-[15px] ${item.favorite ? "fill-[#FFCD00] text-[#FFCD00]" : ""}`} />
                     </span>
                     <ChevronRight className="h-[18px] w-[18px] flex-none text-[var(--text-4)]" />
                   </div>
