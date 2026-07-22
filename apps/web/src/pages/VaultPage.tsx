@@ -167,6 +167,7 @@ export function VaultPage() {
       section={section}
       title={catTitle}
       items={listItems}
+      counts={counts}
       search={search}
       onSearch={setSearch}
       selectedId={selectedId}
@@ -175,6 +176,8 @@ export function VaultPage() {
       onToggleFavorite={(id) => toggleFavorite(id)}
       onImport={() => setView({ kind: "import" })}
       onBackup={() => setView({ kind: "backup" })}
+      onNavigate={navigate}
+      onLock={handleLock}
     />
   );
 
