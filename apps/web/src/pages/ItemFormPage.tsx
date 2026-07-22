@@ -6,7 +6,7 @@ import { PasswordGenerator, StrengthMeter } from "../components/PasswordGenerato
 import { evaluateStrength, initPasswordStrength } from "../lib/password-strength";
 import type { StrengthResult } from "../lib/password-strength";
 import { useTranslation } from "../lib/i18n";
-import { Button } from "../components/ui/button";
+import { useIsDesktop } from "../hooks/useMediaQuery";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent } from "../components/ui/card";
@@ -331,6 +331,7 @@ const ITEM_TYPES: ItemType[] = ["login", "card", "note", "identity"];
 
 export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageProps) {
   const { t } = useTranslation();
+  const isDesktop = useIsDesktop();
   const [itemType, setItemType] = useState<ItemType>((editItem?.itemType as ItemType) ?? "login");
   const [data, setData] = useState<VaultItemData>(editItem?.data ?? defaultDataForType("login"));
   const [saving, setSaving] = useState(false);
@@ -376,81 +377,99 @@ export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageP
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <header className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onCancel} aria-label={t("form.goBack")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">
-          {mode === "create" ? t("form.newItem") : t("form.editItem")}
-        </h1>
-      </header>
+    <div className={isDesktop ? "min-h-full bg-[var(--canvas)]" : "min-h-full bg-[var(--screen)]"}>
+      <div
+        className={
+          isDesktop
+            ? "mb-7 ml-9 mt-7 max-w-[760px] rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-[32px_36px]"
+            : "px-5 pb-10 pt-5"
+        }
+      >
+        <div className="mb-[22px] flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label={t("form.goBack")}
+            className="grid h-9 w-9 place-items-center rounded-lg text-[var(--text-3)] transition-colors hover:bg-[var(--hover)] hover:text-[var(--text)]"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="text-[22px] font-bold text-[var(--text)]">
+            {mode === "create" ? t("form.newItem") : t("form.editItem")}
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-        {/* Item type selector */}
-        {mode === "create" && (
-          <div className="space-y-2">
-            <Label>{t("form.itemType")}</Label>
-            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t("form.itemType")}>
+        <form onSubmit={handleSubmit} className="space-y-2">
+          {mode === "create" && (
+            <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label={t("form.itemType")}>
               {ITEM_TYPES.map((tp) => (
-                <Button
+                <button
                   key={tp}
                   type="button"
                   role="radio"
                   aria-checked={itemType === tp}
                   onClick={() => handleTypeChange(tp)}
-                  variant={itemType === tp ? "default" : "outline"}
-                  size="sm"
+                  className={`h-9 rounded-lg border px-3.5 text-[13px] font-semibold transition-colors ${
+                    itemType === tp
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                      : "border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--hover)]"
+                  }`}
                 >
                   {itemTypeLabels[tp]}
-                </Button>
+                </button>
               ))}
             </div>
+          )}
+
+          <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-5 pb-5 pt-4">
+            <div className="space-y-2">
+              <Label>{t("form.title")}</Label>
+              <Input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} autoFocus />
+            </div>
+
+            {data.type === "login" && <LoginFields data={data as LoginItem} onChange={handleDataChange} disabled={saving} t={t} />}
+            {data.type === "card" && <CardFields data={data as CardItem} onChange={handleDataChange} disabled={saving} t={t} />}
+            {data.type === "note" && <NoteFields data={data as NoteItem} onChange={handleDataChange} disabled={saving} t={t} />}
+            {data.type === "identity" && <IdentityFields data={data as IdentityItem} onChange={handleDataChange} disabled={saving} t={t} />}
+
+            <div className="space-y-2">
+              <Label>{t("form.notes")}</Label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={saving}
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
           </div>
-        )}
 
-        {/* Title */}
-        <div className="space-y-2">
-          <Label>{t("form.title")}</Label>
-          <Input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} autoFocus />
-        </div>
+          {error && (
+            <div role="alert" className="rounded-lg border border-[var(--neg)]/50 bg-[var(--neg-soft)] px-4 py-3 text-sm text-[var(--neg)]">
+              {error}
+            </div>
+          )}
 
-        {/* Type-specific fields */}
-        {data.type === "login" && <LoginFields data={data as LoginItem} onChange={handleDataChange} disabled={saving} t={t} />}
-        {data.type === "card" && <CardFields data={data as CardItem} onChange={handleDataChange} disabled={saving} t={t} />}
-        {data.type === "note" && <NoteFields data={data as NoteItem} onChange={handleDataChange} disabled={saving} t={t} />}
-        {data.type === "identity" && <IdentityFields data={data as IdentityItem} onChange={handleDataChange} disabled={saving} t={t} />}
-
-        {/* Notes */}
-        <div className="space-y-2">
-          <Label>{t("form.notes")}</Label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            disabled={saving}
-            rows={3}
-            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div role="alert" className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {error}
+          <div className="flex gap-2.5 pt-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex h-10 min-w-[120px] items-center justify-center gap-1.5 rounded-lg bg-[var(--accent)] px-[18px] text-sm font-semibold text-white transition-[filter] hover:brightness-95 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {mode === "create" ? t("form.create") : t("form.save")}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border-strong)] px-[18px] text-sm font-semibold text-[var(--text)] transition-colors hover:bg-[var(--hover)] disabled:opacity-60"
+            >
+              {t("form.cancel")}
+            </button>
           </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-3">
-          <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {mode === "create" ? t("form.create") : t("form.save")}
-          </Button>
-          <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="w-full sm:w-auto">
-            {t("form.cancel")}
-          </Button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
