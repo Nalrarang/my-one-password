@@ -12,6 +12,7 @@ import {
   Lock,
   LogOut,
   ShieldAlert,
+  Plus,
 } from "lucide-react";
 
 import { useTranslation } from "../../lib/i18n";
@@ -37,6 +38,7 @@ export interface AppShellProps {
   onNavigate: (section: Section) => void;
   counts: Record<"all" | "login" | "card" | "note" | "identity" | "favorites", number>;
   issueCount: number;
+  onAdd: () => void;
   onLock: () => void;
   onLogout: () => void;
   children: React.ReactNode;
@@ -144,7 +146,7 @@ function Sidebar({ section, onNavigate, counts, issueCount, onLock, onLogout }: 
 // Mobile bottom tab bar
 // ---------------------------------------------------------------------------
 
-function BottomTabs({ section, onNavigate }: Pick<AppShellProps, "section" | "onNavigate">) {
+function BottomTabs({ section, onNavigate, onAdd }: Pick<AppShellProps, "section" | "onNavigate" | "onAdd">) {
   const { t } = useTranslation();
   const theme = useThemeStore((s) => s.theme);
   const toggle = useThemeStore((s) => s.toggle);
@@ -170,6 +172,15 @@ function BottomTabs({ section, onNavigate }: Pick<AppShellProps, "section" | "on
         <ShieldAlert className="h-[22px] w-[22px]" />
         {t("shell.checker")}
       </button>
+      <div className="flex flex-1 items-start justify-center">
+        <button
+          onClick={onAdd}
+          aria-label={t("vault.addItem")}
+          className="-mt-1.5 grid h-[52px] w-[52px] place-items-center rounded-full bg-[var(--accent)] text-white shadow-[0_6px_16px_var(--accent-soft)] active:brightness-95"
+        >
+          <Plus className="h-[26px] w-[26px]" strokeWidth={2.2} />
+        </button>
+      </div>
       <button className={tab(section === "generator")} onClick={() => onNavigate("generator")}>
         <Wand2 className="h-[22px] w-[22px]" />
         {t("shell.generator")}
@@ -201,7 +212,7 @@ export function AppShell(props: AppShellProps) {
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--screen)] text-[var(--text)]">
       <div className="min-h-0 flex-1">{props.children}</div>
-      <BottomTabs section={props.section} onNavigate={props.onNavigate} />
+      <BottomTabs section={props.section} onNavigate={props.onNavigate} onAdd={props.onAdd} />
     </div>
   );
 }

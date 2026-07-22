@@ -229,6 +229,10 @@ export function VaultPage() {
       onNavigate={navigate}
       counts={counts}
       issueCount={0}
+      onAdd={() => {
+        setSection("all");
+        setView({ kind: "create" });
+      }}
       onLock={handleLock}
       onLogout={handleLogout}
     >
