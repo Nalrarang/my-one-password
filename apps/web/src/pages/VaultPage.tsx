@@ -1,36 +1,21 @@
 import { useEffect, useState, useMemo } from "react";
-import type { ItemType, VaultItemData, DecryptedVaultItem } from "@my-one-password/shared";
-import {
-  Search,
-  Plus,
-  Lock,
-  LogOut,
-  Star,
-  Key,
-  CreditCard,
-  FileText,
-  UserCircle,
-  Upload,
-  Loader2,
-  Shield,
-  Download,
-} from "lucide-react";
+import { KeyRound } from "lucide-react";
+import type { ItemType, VaultItemData } from "@my-one-password/shared";
+import { CRYPTO_CONFIG } from "@my-one-password/shared";
 
 import { useTranslation } from "../lib/i18n";
 import { lock, logOut } from "../services/auth";
 import { useVaultStore } from "../stores/vault-store";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
+import { useIsDesktop } from "../hooks/useMediaQuery";
+import { copyToClipboard } from "../lib/clipboard";
+import { AppShell, type Section } from "../components/shell/AppShell";
+import { VaultList, getTitle, getSubtitle } from "../components/shell/VaultList";
+import { PasswordGenerator } from "../components/PasswordGenerator";
 import { ItemFormPage } from "./ItemFormPage";
 import { ItemDetailPage } from "./ItemDetailPage";
 import { ImportPage } from "./ImportPage";
 import { BackupPage } from "./BackupPage";
 import { PasswordHealthPage } from "./PasswordHealthPage";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 type View =
   | { kind: "list" }
@@ -38,67 +23,15 @@ type View =
   | { kind: "create" }
   | { kind: "edit"; itemId: string }
   | { kind: "import" }
-  | { kind: "backup" }
-  | { kind: "health" };
+  | { kind: "backup" };
 
-type FilterType = "all" | ItemType;
-
-// ---------------------------------------------------------------------------
-// Icons by item type
-// ---------------------------------------------------------------------------
-
-function ItemTypeIcon({ type }: { type: string }) {
-  switch (type) {
-    case "login":
-      return <Key className="h-5 w-5" aria-hidden="true" />;
-    case "card":
-      return <CreditCard className="h-5 w-5" aria-hidden="true" />;
-    case "note":
-      return <FileText className="h-5 w-5" aria-hidden="true" />;
-    case "identity":
-      return <UserCircle className="h-5 w-5" aria-hidden="true" />;
-    default:
-      return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Subtitle helpers
-// ---------------------------------------------------------------------------
-
-function getSubtitle(item: DecryptedVaultItem): string {
-  const { data } = item;
-  switch (data.type) {
-    case "login":
-      return data.username || data.url || "";
-    case "card":
-      return data.cardNumber ? `\u2022\u2022\u2022\u2022 ${data.cardNumber.slice(-4)}` : "";
-    case "note":
-      return data.content ? data.content.slice(0, 60) : "";
-    case "identity": {
-      const name = [data.firstName, data.lastName].filter(Boolean).join(" ");
-      return name || data.email || "";
-    }
-    default:
-      return "";
-  }
-}
-
-function getTitle(item: DecryptedVaultItem): string {
-  if ("title" in item.data) return (item.data as { title: string }).title || "Untitled";
-  return "Untitled";
-}
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+const TYPE_SECTIONS: Section[] = ["login", "card", "note", "identity"];
 
 export function VaultPage() {
   const { t } = useTranslation();
+  const isDesktop = useIsDesktop();
 
   const items = useVaultStore((s) => s.items);
-  const loading = useVaultStore((s) => s.loading);
-  const error = useVaultStore((s) => s.error);
   const loadItems = useVaultStore((s) => s.loadItems);
   const addItem = useVaultStore((s) => s.addItem);
   const updateItem = useVaultStore((s) => s.updateItem);
@@ -107,350 +40,194 @@ export function VaultPage() {
   const startAutoSync = useVaultStore((s) => s.startAutoSync);
   const clearVault = useVaultStore((s) => s.clearVault);
 
+  const [section, setSection] = useState<Section>("all");
   const [view, setView] = useState<View>({ kind: "list" });
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterType>("all");
 
-  // Filter definitions using t() for labels.
-  const FILTERS: { value: FilterType; label: string }[] = useMemo(
-    () => [
-      { value: "all", label: t("vault.all") },
-      { value: "login", label: t("vault.logins") },
-      { value: "card", label: t("vault.cards") },
-      { value: "note", label: t("vault.notes") },
-      { value: "identity", label: t("vault.identities") },
-    ],
-    [t],
-  );
-
-  // Load items on mount and start background sync.
   useEffect(() => {
     loadItems().then(() => startAutoSync());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Clear vault when component unmounts (lock/logout).
   useEffect(() => {
-    return () => {
-      clearVault();
-    };
+    return () => clearVault();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filtered and searched items.
-  const filteredItems = useMemo(() => {
-    let result = items;
+  const counts = useMemo(
+    () => ({
+      all: items.length,
+      login: items.filter((i) => i.itemType === "login").length,
+      card: items.filter((i) => i.itemType === "card").length,
+      note: items.filter((i) => i.itemType === "note").length,
+      identity: items.filter((i) => i.itemType === "identity").length,
+      favorites: items.filter((i) => i.favorite).length,
+    }),
+    [items],
+  );
 
-    // Type filter.
-    if (filter !== "all") {
-      result = result.filter((item) => item.itemType === filter);
-    }
+  const listItems = useMemo(() => {
+    let r = items;
+    if (section === "favorites") r = r.filter((i) => i.favorite);
+    else if (TYPE_SECTIONS.includes(section)) r = r.filter((i) => i.itemType === section);
+    const q = search.trim().toLowerCase();
+    if (q) r = r.filter((i) => getTitle(i).toLowerCase().includes(q) || getSubtitle(i).toLowerCase().includes(q));
+    return r;
+  }, [items, section, search]);
 
-    // Search filter.
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter((item) => {
-        const title = getTitle(item).toLowerCase();
-        const subtitle = getSubtitle(item).toLowerCase();
-        return title.includes(q) || subtitle.includes(q);
-      });
-    }
+  const catTitle = useMemo(() => {
+    const map: Record<string, string> = {
+      all: t("vault.all"),
+      login: t("vault.logins"),
+      card: t("vault.cards"),
+      note: t("vault.notes"),
+      identity: t("vault.identities"),
+      favorites: t("vault.favorites"),
+    };
+    return map[section] ?? t("vault.all");
+  }, [section, t]);
 
-    return result;
-  }, [items, filter, search]);
-
-  // Handlers.
+  // --- Handlers ---
   function handleLock() {
     clearVault();
     lock();
   }
-
   async function handleLogout() {
     clearVault();
     await logOut();
   }
-
   async function handleCreate(itemType: ItemType, data: VaultItemData) {
     await addItem(itemType, data);
     setView({ kind: "list" });
   }
-
-  async function handleUpdate(itemId: string, _itemType: ItemType, data: VaultItemData) {
+  async function handleUpdate(itemId: string, data: VaultItemData) {
     await updateItem(itemId, data);
     setView({ kind: "detail", itemId });
   }
-
   async function handleDelete(itemId: string) {
     await removeItem(itemId);
     setView({ kind: "list" });
   }
-
-  async function handleToggleFavorite(e: React.MouseEvent, itemId: string) {
-    e.stopPropagation();
-    await toggleFavorite(itemId);
+  async function handleImport(imported: Array<{ itemType: ItemType; data: VaultItemData; favorite: boolean }>) {
+    for (const it of imported) await addItem(it.itemType, it.data, it.favorite);
   }
 
-  async function handleImport(importItems: Array<{ itemType: ItemType; data: VaultItemData; favorite: boolean }>) {
-    for (const item of importItems) {
-      await addItem(item.itemType, item.data, item.favorite);
-    }
+  function navigate(s: Section) {
+    setSection(s);
+    setView({ kind: "list" });
   }
 
-  // ---------------------------------------------------------------------------
-  // View routing
-  // ---------------------------------------------------------------------------
+  const selectedId = view.kind === "detail" ? view.itemId : view.kind === "edit" ? view.itemId : null;
 
-  // Detail view.
-  if (view.kind === "detail") {
-    const item = items.find((i) => i.id === view.itemId);
-    if (!item) {
-      setView({ kind: "list" });
-      return null;
+  // --- Active pane (detail / form) shared by desktop right-pane and mobile screen ---
+  function activePane(): React.ReactNode {
+    if (view.kind === "create") {
+      return <ItemFormPage mode="create" onSave={handleCreate} onCancel={() => setView({ kind: "list" })} />;
     }
+    if (view.kind === "edit") {
+      const item = items.find((i) => i.id === view.itemId);
+      if (!item) return null;
+      return (
+        <ItemFormPage
+          mode="edit"
+          editItem={item}
+          onSave={(_ty, data) => handleUpdate(view.itemId, data)}
+          onCancel={() => setView({ kind: "detail", itemId: view.itemId })}
+        />
+      );
+    }
+    if (view.kind === "detail") {
+      const item = items.find((i) => i.id === view.itemId);
+      if (!item) return null;
+      return (
+        <ItemDetailPage
+          item={item}
+          onEdit={() => setView({ kind: "edit", itemId: item.id })}
+          onDelete={() => handleDelete(item.id)}
+          onBack={() => setView({ kind: "list" })}
+        />
+      );
+    }
+    return null;
+  }
+
+  function noSelection() {
     return (
-      <ItemDetailPage
-        item={item}
-        onEdit={() => setView({ kind: "edit", itemId: view.itemId })}
-        onDelete={() => handleDelete(view.itemId)}
-        onBack={() => setView({ kind: "list" })}
-      />
+      <div className="flex h-full flex-col items-center justify-center bg-[var(--canvas)] text-center">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-[var(--panel-2)] text-[var(--text-4)]">
+          <KeyRound className="h-7 w-7" />
+        </div>
+        <div className="mt-4 text-[15px] font-medium text-[var(--text-3)]">{t("detail.selectPrompt")}</div>
+      </div>
     );
   }
 
-  // Create view.
-  if (view.kind === "create") {
-    return (
-      <ItemFormPage
-        mode="create"
-        onSave={handleCreate}
-        onCancel={() => setView({ kind: "list" })}
-      />
-    );
-  }
+  const list = (
+    <VaultList
+      section={section}
+      title={catTitle}
+      items={listItems}
+      search={search}
+      onSearch={setSearch}
+      selectedId={selectedId}
+      onSelect={(id) => setView({ kind: "detail", itemId: id })}
+      onAdd={() => setView({ kind: "create" })}
+      onToggleFavorite={(id) => toggleFavorite(id)}
+      onImport={() => setView({ kind: "import" })}
+      onBackup={() => setView({ kind: "backup" })}
+    />
+  );
 
-  // Edit view.
-  if (view.kind === "edit") {
-    const item = items.find((i) => i.id === view.itemId);
-    if (!item) {
-      setView({ kind: "list" });
-      return null;
-    }
-    return (
-      <ItemFormPage
-        mode="edit"
-        editItem={item}
-        onSave={(_type, data) => handleUpdate(view.itemId, _type, data)}
-        onCancel={() => setView({ kind: "detail", itemId: view.itemId })}
-      />
-    );
-  }
+  // --- Build content ---
+  let content: React.ReactNode;
 
-  // Import view.
-  if (view.kind === "import") {
-    return (
-      <ImportPage
-        onImport={handleImport}
-        onBack={() => {
-          loadItems();
-          setView({ kind: "list" });
+  if (section === "health") {
+    content = (
+      <PasswordHealthPage
+        onBack={() => navigate("all")}
+        onSelectItem={(id) => {
+          setSection("all");
+          setView({ kind: "detail", itemId: id });
         }}
       />
     );
-  }
-
-  // Backup view.
-  if (view.kind === "backup") {
-    return (
-      <BackupPage
-        onBack={() => setView({ kind: "list" })}
-      />
+  } else if (section === "generator") {
+    content = (
+      <div className="flex h-full items-start justify-center overflow-y-auto bg-[var(--canvas)] p-6">
+        <div className="w-full max-w-lg">
+          <PasswordGenerator onSelect={(pw) => copyToClipboard(pw, CRYPTO_CONFIG.CLIPBOARD_CLEAR_TIMEOUT)} />
+        </div>
+      </div>
     );
-  }
-
-  // Password health view.
-  if (view.kind === "health") {
-    return (
-      <PasswordHealthPage
-        onBack={() => setView({ kind: "list" })}
-        onSelectItem={(itemId) => setView({ kind: "detail", itemId })}
-      />
+  } else if (view.kind === "import") {
+    content = <ImportPage onImport={handleImport} onBack={() => { loadItems(); setView({ kind: "list" }); }} />;
+  } else if (view.kind === "backup") {
+    content = <BackupPage onBack={() => setView({ kind: "list" })} />;
+  } else if (isDesktop) {
+    content = (
+      <>
+        <div className="w-[372px] min-w-[372px] border-r border-[var(--border)]">{list}</div>
+        <div className="min-w-0 flex-1 overflow-y-auto bg-[var(--canvas)]">{activePane() ?? noSelection()}</div>
+      </>
     );
+  } else {
+    // mobile: one screen at a time
+    content =
+      view.kind === "detail" || view.kind === "create" || view.kind === "edit"
+        ? <div className="h-full overflow-y-auto">{activePane()}</div>
+        : list;
   }
-
-  // ---------------------------------------------------------------------------
-  // List view (default)
-  // ---------------------------------------------------------------------------
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      {/* Header */}
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-foreground">{t("vault.title")}</h1>
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setView({ kind: "health" })}
-            aria-label={t("health.title")}
-          >
-            <Shield className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setView({ kind: "backup" })}
-            aria-label={t("backup.title")}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setView({ kind: "import" })}
-            aria-label={t("vault.import")}
-          >
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("vault.import")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLock}
-            aria-label={t("vault.lock")}
-          >
-            <Lock className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("vault.lock")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLogout}
-            aria-label={t("vault.signOut")}
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("vault.signOut")}</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Search */}
-      <div className="mt-4">
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("vault.search")}
-            className="pl-10"
-            aria-label={t("vault.search")}
-          />
-        </div>
-      </div>
-
-      {/* Filter bar */}
-      <div className="mt-3 flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Filter by item type">
-        {FILTERS.map((f) => (
-          <Badge
-            key={f.value}
-            role="tab"
-            aria-selected={filter === f.value}
-            onClick={() => setFilter(f.value)}
-            variant={filter === f.value ? "default" : "outline"}
-            className={`cursor-pointer whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-colors ${
-              filter === f.value
-                ? ""
-                : "hover:bg-accent hover:text-accent-foreground"
-            }`}
-          >
-            {f.label}
-          </Badge>
-        ))}
-      </div>
-
-      {/* Error banner */}
-      {error && (
-        <div role="alert" className="mt-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      {/* Loading state */}
-      {loading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-          <span className="sr-only">{t("vault.loading")}</span>
-        </div>
-      )}
-
-      {/* Item list */}
-      {!loading && filteredItems.length > 0 && (
-        <ul className="mt-4 space-y-1.5" aria-label="Vault items">
-          {filteredItems.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => setView({ kind: "detail", itemId: item.id })}
-                className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-accent focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <span className="flex-shrink-0 text-muted-foreground">
-                  <ItemTypeIcon type={item.itemType} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">
-                    {getTitle(item)}
-                  </span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {getSubtitle(item)}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => handleToggleFavorite(e, item.id)}
-                  className="flex-shrink-0 rounded p-1 hover:bg-accent focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  aria-label={item.favorite ? t("vault.removeFromFavorites") : t("vault.addToFavorites")}
-                >
-                  <Star
-                    className={`h-4 w-4 ${
-                      item.favorite
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-muted-foreground"
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Empty state */}
-      {!loading && filteredItems.length === 0 && (
-        <div className="mt-16 flex flex-col items-center justify-center text-center">
-          <div className="rounded-full bg-muted p-4">
-            <Lock className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            {items.length === 0
-              ? t("vault.noItems")
-              : t("vault.noResults")}
-          </p>
-        </div>
-      )}
-
-      {/* FAB */}
-      <Button
-        size="icon"
-        onClick={() => setView({ kind: "create" })}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-        aria-label={t("vault.addItem")}
-      >
-        <Plus className="h-6 w-6" aria-hidden="true" />
-      </Button>
-    </div>
+    <AppShell
+      section={section}
+      onNavigate={navigate}
+      counts={counts}
+      issueCount={0}
+      onLock={handleLock}
+      onLogout={handleLogout}
+    >
+      {content}
+    </AppShell>
   );
 }

@@ -1,0 +1,43 @@
+/*
+ * Design tokens from the Claude Design handoff (Zigzag PDS based).
+ * Light/dark driven by [data-theme] on <html> (set by theme-store).
+ * Components consume these via Tailwind arbitrary values, e.g. bg-[var(--panel)].
+ */
+
+:root {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+[data-theme="light"] {
+  --app-bg: #eff0f0; --screen: #f5f6f7; --panel: #ffffff; --panel-2: #f6f7f7;
+  --sidebar: #ffffff; --canvas: #eff0f0; --card: #f5f6f7;
+  --border: #e2e5e6; --border-strong: #d0d4d6; --divider: #eff0f0; --field: #f6f7f7;
+  --text: #292b2b; --text-2: #606567; --text-3: #878f91; --text-4: #b3babd;
+  --accent: #4769f7; --accent-2: #405ede; --accent-soft: #f0f3ff;
+  --brand: #ff349c; --pos: #23ae50; --pos-soft: #f2faf4; --warn: #e58300;
+  --warn-soft: #fff6eb; --neg: #e52d2d; --neg-soft: #fff0f0;
+  --hover: rgba(0, 0, 0, 0.045); --sel: #f0f3ff; --shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --nav-bg: rgba(255, 255, 255, 0.92);
+}
+
+[data-theme="dark"] {
+  --app-bg: #0e1013; --screen: #0e1013; --panel: #191b1e; --panel-2: #212428;
+  --sidebar: #141619; --canvas: #0e1013; --card: #191b1e;
+  --border: #2a2e33; --border-strong: #3a3f45; --divider: #232629; --field: #202327;
+  --text: #f1f3f4; --text-2: #a6adb2; --text-3: #767d82; --text-4: #565c61;
+  --accent: #5a78f8; --accent-2: #4769f7; --accent-soft: rgba(90, 120, 248, 0.16);
+  --brand: #ff5cb0; --pos: #3fc46b; --pos-soft: rgba(63, 196, 107, 0.15); --warn: #ffa333;
+  --warn-soft: rgba(255, 163, 51, 0.15); --neg: #ff5b5b; --neg-soft: rgba(255, 91, 91, 0.15);
+  --hover: rgba(255, 255, 255, 0.055); --sel: rgba(90, 120, 248, 0.16);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.5); --nav-bg: rgba(20, 22, 25, 0.9);
+}
+
+html {
+  background: var(--app-bg);
+}
+body {
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
