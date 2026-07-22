@@ -2,10 +2,6 @@ import { useState } from "react";
 import { Loader2, Lock } from "lucide-react";
 import { unlock, logOut } from "../services/auth";
 import { useTranslation } from "../lib/i18n";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 
 export function UnlockPage() {
   const { t } = useTranslation();
@@ -17,78 +13,63 @@ export function UnlockPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       await unlock(masterPassword);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("auth.failedUnlock");
-      setError(message);
+      setError(err instanceof Error ? err.message : t("auth.failedUnlock"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleLogout() {
-    await logOut();
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <Lock className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-xl">{t("auth.vaultLocked")}</CardTitle>
-            <CardDescription>{t("auth.unlockDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="unlock-password">{t("auth.masterPassword")}</Label>
-                <Input
-                  id="unlock-password"
-                  type="password"
-                  autoComplete="current-password"
-                  autoFocus
-                  required
-                  value={masterPassword}
-                  onChange={(e) => setMasterPassword(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
+    <div className="flex min-h-screen items-center justify-center bg-[var(--app-bg)] px-6">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-[400px] rounded-[20px] border border-[var(--border)] bg-[var(--panel)] p-[40px_36px] shadow-[var(--shadow)]"
+      >
+        <div className="mb-[26px] flex flex-col items-center gap-1.5">
+          <div className="mb-1.5 grid h-[60px] w-[60px] place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+            <Lock className="h-[26px] w-[26px]" strokeWidth={1.8} />
+          </div>
+          <div className="text-[22px] font-bold text-[var(--text)]">{t("auth.vaultLocked")}</div>
+          <div className="text-center text-[13px] text-[var(--text-2)]">{t("auth.unlockDescription")}</div>
+        </div>
 
-              {error && (
-                <div
-                  role="alert"
-                  className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-                >
-                  {error}
-                </div>
-              )}
+        <label className="mb-2 block text-xs font-semibold text-[var(--text-2)]">{t("auth.masterPassword")}</label>
+        <input
+          type="password"
+          autoComplete="current-password"
+          autoFocus
+          required
+          value={masterPassword}
+          onChange={(e) => setMasterPassword(e.target.value)}
+          disabled={loading}
+          placeholder={t("auth.masterPassword")}
+          className="h-12 w-full rounded-[10px] border border-[var(--border-strong)] bg-[var(--field)] px-3.5 text-[15px] text-[var(--text)] outline-none transition-colors placeholder:text-[var(--text-3)] focus:border-[var(--accent)]"
+        />
 
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("auth.unlocking")}
-                  </>
-                ) : (
-                  t("auth.unlock")
-                )}
-              </Button>
+        {error && <div className="mt-3 text-center text-xs text-[var(--neg)]">{error}</div>}
 
-              <div className="text-center">
-                <Button variant="link" onClick={handleLogout} className="text-muted-foreground">
-                  {t("auth.signOut")}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--accent)] text-[15px] font-semibold text-white transition-[filter] hover:brightness-95 disabled:opacity-60"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {loading ? t("auth.unlocking") : t("auth.unlock")}
+        </button>
+
+        <div className="mt-[18px] text-center">
+          <button
+            type="button"
+            onClick={() => logOut()}
+            className="text-[13px] text-[var(--text-3)] transition-colors hover:text-[var(--text-2)]"
+          >
+            {t("auth.signOut")}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
