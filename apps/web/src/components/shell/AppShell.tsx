@@ -165,8 +165,8 @@ function BottomTabs({ section, onNavigate, onAdd }: Pick<AppShellProps, "section
       style={{ background: "var(--nav-bg)" }}
     >
       <button className={tab(vaultActive)} onClick={() => onNavigate("all")}>
-        <LayoutGrid className="h-[22px] w-[22px]" />
-        {t("shell.vault")}
+        <Lock className="h-[22px] w-[22px]" />
+        {t("nav.vault")}
       </button>
       <button className={tab(section === "health")} onClick={() => onNavigate("health")}>
         <ShieldAlert className="h-[22px] w-[22px]" />

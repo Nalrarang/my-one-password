@@ -331,7 +331,7 @@ function MobileList({
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-[var(--screen)] px-5 pt-6">
       <div className="mb-3.5 flex items-center justify-between">
-        <div className="text-[28px] font-bold tracking-[-0.4px] text-[var(--text)]">{t("shell.vault")}</div>
+        <div className="text-[28px] font-bold tracking-[-0.4px] text-[var(--text)]">{t("nav.vault")}</div>
         <button
           onClick={onLock}
           className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[var(--field)] text-[var(--text-2)]"
@@ -346,7 +346,7 @@ function MobileList({
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder={t("vault.search")}
+          placeholder={t("nav.search")}
           className="h-[46px] w-full rounded-[13px] bg-[var(--field)] pl-[42px] pr-3.5 text-[15px] text-[var(--text)] outline-none placeholder:text-[var(--text-3)]"
         />
       </div>
