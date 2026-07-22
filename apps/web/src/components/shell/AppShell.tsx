@@ -161,8 +161,8 @@ function BottomTabs({ section, onNavigate, onAdd }: Pick<AppShellProps, "section
 
   return (
     <nav
-      className="flex items-stretch border-t border-[var(--border)] px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur"
-      style={{ background: "var(--nav-bg)" }}
+      className="flex items-stretch border-t border-[var(--border)] px-5 pt-2 backdrop-blur-[18px]"
+      style={{ background: "var(--nav-bg)", paddingBottom: "max(26px, env(safe-area-inset-bottom))" }}
     >
       <button className={tab(vaultActive)} onClick={() => onNavigate("all")}>
         <Lock className="h-[22px] w-[22px]" />
