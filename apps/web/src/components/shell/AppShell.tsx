@@ -66,7 +66,6 @@ function Sidebar({ section, onNavigate, counts, issueCount, onLock, onLogout }: 
   const { t } = useTranslation();
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
-  const nativeTop = isTauriShell();
 
   const navBtn = (active: boolean) =>
     `flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
@@ -76,8 +75,7 @@ function Sidebar({ section, onNavigate, counts, issueCount, onLock, onLogout }: 
     }`;
 
   return (
-    <aside className="flex h-screen w-[244px] min-w-[244px] flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--sidebar)] p-[18px_14px]">
-      {nativeTop && <div data-tauri-drag-region className="h-6 w-full shrink-0" />}
+    <aside className="flex h-full w-[244px] min-w-[244px] flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--sidebar)] p-[18px_14px]">
       <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
         <div className="grid h-8 w-8 place-items-center rounded-[9px] bg-[var(--accent)] text-white">
           <ShieldCheck className="h-[18px] w-[18px]" />
@@ -208,9 +206,17 @@ export function AppShell(props: AppShellProps) {
 
   if (isDesktop) {
     return (
-      <div className="flex h-screen w-full overflow-hidden bg-[var(--app-bg)] text-[var(--text)]">
-        <Sidebar {...props} />
-        <div className="flex min-w-0 flex-1">{props.children}</div>
+      <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--app-bg)] text-[var(--text)]">
+        {isTauriShell() && (
+          <div
+            data-tauri-drag-region
+            className="h-[30px] w-full shrink-0 border-b border-[var(--border)] bg-[var(--app-bg)]"
+          />
+        )}
+        <div className="flex min-h-0 flex-1">
+          <Sidebar {...props} />
+          <div className="flex min-w-0 flex-1">{props.children}</div>
+        </div>
       </div>
     );
   }
