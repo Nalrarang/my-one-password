@@ -58,10 +58,15 @@ const VAULT_ITEMS: { key: CountKey; labelKey: string; icon: typeof Key }[] = [
 // Desktop sidebar
 // ---------------------------------------------------------------------------
 
+function isTauriShell(): boolean {
+  return typeof window !== "undefined" && "isTauri" in window && Boolean((window as { isTauri?: boolean }).isTauri);
+}
+
 function Sidebar({ section, onNavigate, counts, issueCount, onLock, onLogout }: Omit<AppShellProps, "children">) {
   const { t } = useTranslation();
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const nativeTop = isTauriShell();
 
   const navBtn = (active: boolean) =>
     `flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium transition-colors ${
@@ -72,6 +77,7 @@ function Sidebar({ section, onNavigate, counts, issueCount, onLock, onLogout }: 
 
   return (
     <aside className="flex h-screen w-[244px] min-w-[244px] flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--sidebar)] p-[18px_14px]">
+      {nativeTop && <div data-tauri-drag-region className="h-6 w-full shrink-0" />}
       <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
         <div className="grid h-8 w-8 place-items-center rounded-[9px] bg-[var(--accent)] text-white">
           <ShieldCheck className="h-[18px] w-[18px]" />

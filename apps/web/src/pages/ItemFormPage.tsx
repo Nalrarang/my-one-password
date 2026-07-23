@@ -377,11 +377,11 @@ export function ItemFormPage({ mode, editItem, onSave, onCancel }: ItemFormPageP
   };
 
   return (
-    <div className={isDesktop ? "min-h-full bg-[var(--canvas)]" : "min-h-full bg-[var(--screen)]"}>
+    <div className={isDesktop ? "min-h-full bg-[var(--canvas)] px-7 py-7 lg:px-9" : "min-h-full bg-[var(--screen)]"}>
       <div
         className={
           isDesktop
-            ? "mb-7 ml-9 mt-7 max-w-[760px] rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-[32px_36px]"
+            ? "mx-auto max-w-[760px] rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-[28px_28px] lg:p-[32px_36px]"
             : "px-5 pb-10 pt-5"
         }
       >

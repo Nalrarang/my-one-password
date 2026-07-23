@@ -223,9 +223,9 @@ export function ItemDetail({ item, onEdit, onDelete, onBack, onToggleFavorite }:
 
   if (isDesktop) {
     return (
-      <div className="min-h-full bg-[var(--canvas)]">
+      <div className="min-h-full bg-[var(--canvas)] px-7 py-7 lg:px-9">
         {iconbtnStyle}
-        <div className="mb-7 ml-9 mr-0 mt-7 max-w-[820px] rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-[32px_36px]">
+        <div className="mx-auto max-w-[820px] rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-[28px_28px] lg:p-[32px_36px]">
           <div className="mb-7 flex items-start gap-4">
             <Mono title={title} size={56} radius={15} font={22} />
             <div className="min-w-0 flex-1 pt-0.5">
